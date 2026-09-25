@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#EFEAE2;font-family:'Outfit',system-ui,sans-serif;color:#2B1F27}
+a{color:#5B2A4E}a:hover{color:#3E1A35}
+*{box-sizing:border-box}
+input{font-family:inherit}
+::-webkit-scrollbar{width:0;height:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-opt:target .dv-oid{background:#5B2A4E;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Gowri consumer app · interactive prototype + two Home directions</span></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:1160px;margin:0 0 28px">
+  <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:16px 18px;font-size:12.5px;line-height:1.5;color:#3d3238">
+    <div style="font-weight:600;color:#5B2A4E;margin-bottom:6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase">Assumptions</div>
+    App: <b>Gowri</b>, "For a Beautiful Life" (web store: mysaalife.com). Wellness / OTC / personal care; no prescription flow yet (needs a separate workflow). India, INR, GST-inclusive prices. Warm, friendly copy. iOS frame shown; layout is identical on Android.
+  </div>
+  <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:16px 18px;font-size:12.5px;line-height:1.5;color:#3d3238">
+    <div style="font-weight:600;color:#5B2A4E;margin-bottom:6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase">Zoho → App (read)</div>
+    Items API: name, SKU, MRP, selling rate, GST %, pack size, stock per warehouse, images, description. Shown live as price, "In stock / Only N left", delivery estimate. Sales Order + Package / Shipment status drive Order Tracking. Books invoice → downloadable GST invoice.
+  </div>
+  <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:16px 18px;font-size:12.5px;line-height:1.5;color:#3d3238">
+    <div style="font-weight:600;color:#5B2A4E;margin-bottom:6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase">App → Zoho (write, via Gowri backend)</div>
+    Contact (customer), Sales Order with line items / coupon, payment record, shipping address, cancellation & return (credit note). The app never holds Zoho credentials; the backend talks to Zoho over OAuth. Stock reserved on order, released on cancel.
+  </div>
+</div>
+
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+  <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Interactive prototype · every screen · Home: "Shop by concern" (editorial)</div>
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+  <div style="width:100%;height:100%;background:#FBF8F3;position:relative;display:flex;flex-direction:column;font-family:'Outfit',system-ui,sans-serif;color:#2B1F27">
+
+  <!-- LOGIN -->
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1;display:flex;flex-direction:column;padding:96px 28px 40px;background:linear-gradient(180deg,#5B2A4E 0%,#5B2A4E 46%,#FBF8F3 46.1%)">
+    <div style="color:#fff">
+      <div style="font-family:'Playfair Display',serif;font-size:46px;font-weight:500;letter-spacing:-.01em;line-height:1">gowri</div>
+      <div style="font-size:13px;opacity:.85;margin-top:8px;letter-spacing:.08em;text-transform:uppercase">For a Beautiful Life</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:26px;line-height:1.25;margin-top:60px;max-width:300px">Small daily rituals, delivered to your door.</div>
+    </div>
+    <div style="margin-top:auto;background:#fff;border-radius:20px;padding:22px 20px;box-shadow:0 10px 30px rgba(43,31,39,.10)">
+      <sc-if value="{{ otpStage }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:18px;font-weight:600">Enter the 4-digit code</div>
+        <div style="font-size:13px;color:#7a6c75;margin-top:4px">Sent to +91 {{ phone }} · <span onClick="{{ backToPhone }}" style="color:#5B2A4E;font-weight:500;cursor:pointer">change</span></div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <sc-for list="{{ otpBoxes }}" as="b" hint-placeholder-count="4">
+            <div style="flex:1;height:56px;border-radius:12px;border:1.5px solid {{ b.border }};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;background:#FBF8F3">{{ b.ch }}</div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">
+          <sc-for list="{{ keypad }}" as="k" hint-placeholder-count="12">
+            <div onClick="{{ k.tap }}" style="height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;background:{{ k.bg }};cursor:pointer;user-select:none">{{ k.label }}</div>
+          </sc-for>
+        </div>
+        <div style="font-size:12px;color:#7a6c75;margin-top:12px;text-align:center">Demo: any 4 digits work</div>
+      </sc-if>
+      <sc-if value="{{ phoneStage }}" hint-placeholder-val="{{ true }}">
+        <div style="font-size:18px;font-weight:600">Hi there, let's get you in</div>
+        <div style="font-size:13px;color:#7a6c75;margin-top:4px">We'll text you a one-time code. No passwords.</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:16px;height:54px;border-radius:12px;border:1.5px solid #E4DCD3;padding:0 14px;background:#FBF8F3">
+          <span style="font-weight:600;color:#5B2A4E">+91</span>
+          <input value="{{ phone }}" onChange="{{ setPhone }}" placeholder="Mobile number" inputMode="numeric" style="flex:1;border:0;outline:0;background:transparent;font-size:18px;font-weight:500;letter-spacing:.04em;color:#2B1F27" />
+        </div>
+        <div onClick="{{ sendOtp }}" style="margin-top:14px;height:54px;border-radius:14px;background:{{ sendBg }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer">Send code</div>
+        <div style="font-size:11.5px;color:#9a8c95;margin-top:12px;text-align:center;line-height:1.4">By continuing you agree to Gowri's Terms & Privacy Policy</div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;position:relative">
+
+  <!-- HOME -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:110px">
+    <div style="padding:64px 20px 0;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:12px;color:#7a6c75">Deliver to</div>
+        <div style="font-size:14px;font-weight:600">Home · Jubilee Hills 500033 <span style="color:#5B2A4E">▾</span></div>
+      </div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;color:#5B2A4E">gowri</div>
+    </div>
+    <div onClick="{{ goSearch }}" style="margin:16px 20px 0;height:48px;border-radius:14px;background:#fff;border:1px solid #EAE3DA;display:flex;align-items:center;gap:10px;padding:0 14px;color:#9a8c95;font-size:14px;cursor:pointer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B2A4E" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Search Gowri products
+    </div>
+
+    <sc-if value="{{ homeEditorial }}" hint-placeholder-val="{{ true }}">
+      <div style="margin:22px 20px 0;border-radius:22px;background:#5B2A4E;color:#fff;padding:22px 22px 20px;position:relative;overflow:hidden">
+        <div style="position:absolute;right:-30px;top:-30px;width:170px;height:170px;border-radius:50%;background:rgba(255,255,255,.08)"></div>
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8">This week</div>
+        <div style="font-family:'Playfair Display',serif;font-size:27px;line-height:1.15;margin-top:8px;max-width:250px">Sleep better, wake lighter</div>
+        <div style="font-size:13px;opacity:.85;margin-top:8px">Magnesium rituals, 20% off till Sunday</div>
+        <div onClick="{{ goShopConcernSleep }}" style="display:inline-flex;margin-top:16px;height:40px;padding:0 18px;border-radius:999px;background:#fff;color:#5B2A4E;font-weight:600;font-size:14px;align-items:center;cursor:pointer">Shop the ritual</div>
+      </div>
+      <div style="padding:26px 20px 0;font-family:'Playfair Display',serif;font-size:21px">Shop by concern</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 20px 0">
+        <sc-for list="{{ concerns }}" as="c" hint-placeholder-count="4">
+          <div onClick="{{ c.tap }}" style="height:88px;border-radius:16px;background:{{ c.bg }};padding:14px;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer">
+            <div style="font-size:15px;font-weight:600;color:{{ c.fg }}">{{ c.name }}</div>
+            <div style="font-size:12px;color:{{ c.fg }};opacity:.75">{{ c.count }} products</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ homeGrid }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:8px;padding:16px 20px 0;overflow:auto">
+        <sc-for list="{{ categoryChips }}" as="c" hint-placeholder-count="5">
+          <div onClick="{{ c.tap }}" style="flex:none;height:36px;padding:0 14px;border-radius:999px;background:#fff;border:1px solid #EAE3DA;display:flex;align-items:center;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap">{{ c.name }}</div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:10px;padding:16px 20px 0;overflow:auto">
+        <div onClick="{{ goCoupons }}" style="flex:none;width:280px;border-radius:18px;background:#F1E6EE;padding:18px;color:#5B2A4E;cursor:pointer">
+          <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Offer</div>
+          <div style="font-size:19px;font-weight:600;margin-top:6px;line-height:1.2">Flat 20% off on Sleep & Stress</div>
+          <div style="font-size:12.5px;margin-top:6px;opacity:.8">Code SLEEP20 · till Sunday</div>
+        </div>
+        <div style="flex:none;width:280px;border-radius:18px;background:#E6EFE9;padding:18px;color:#1F4D3A">
+          <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600">New launch</div>
+          <div style="font-size:19px;font-weight:600;margin-top:6px;line-height:1.2">MyGlo Vitamin D3 Drops</div>
+          <div style="font-size:12.5px;margin-top:6px;opacity:.8">Sunshine in a bottle · ₹399</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="padding:26px 20px 0;display:flex;justify-content:space-between;align-items:baseline">
+      <div style="font-family:'Playfair Display',serif;font-size:21px">Best sellers</div>
+      <div onClick="{{ goShopAll }}" style="font-size:13px;color:#5B2A4E;font-weight:500;cursor:pointer">See all</div>
+    </div>
+    <div style="display:flex;gap:12px;padding:12px 20px 0;overflow:auto">
+      <sc-for list="{{ bestSellers }}" as="p" hint-placeholder-count="4">
+        <div style="flex:none;width:156px;background:#fff;border-radius:16px;border:1px solid #EFE8E0;overflow:hidden">
+          <div onClick="{{ p.open }}" style="height:140px;position:relative;cursor:pointer;background:{{ p.tint }}">
+            <image-slot id="img-{{ p.sku }}" shape="rect" placeholder="Product photo"></image-slot>
+            <div style="position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;background:{{ p.stockBg }};color:{{ p.stockFg }};font-size:10.5px;font-weight:600;pointer-events:none">{{ p.stockLabel }}</div>
+          </div>
+          <div style="padding:10px 12px 12px">
+            <div onClick="{{ p.open }}" style="font-size:13.5px;font-weight:600;line-height:1.25;height:34px;overflow:hidden;cursor:pointer">{{ p.name }}</div>
+            <div style="font-size:11.5px;color:#7a6c75;margin-top:2px">{{ p.size }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <div><span style="font-weight:700;font-size:15px">₹{{ p.price }}</span> <span style="font-size:11.5px;color:#9a8c95;text-decoration:line-through">₹{{ p.mrp }}</span></div>
+              <div onClick="{{ p.add }}" style="width:32px;height:32px;border-radius:10px;background:#5B2A4E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;cursor:pointer">+</div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="padding:26px 20px 0;font-family:'Playfair Display',serif;font-size:21px">Recommended for you</div>
+    <div style="padding:12px 20px 0;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ recommended }}" as="p" hint-placeholder-count="2">
+        <div onClick="{{ p.open }}" style="display:flex;gap:12px;background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:10px;cursor:pointer;align-items:center">
+          <div style="width:64px;height:64px;border-radius:12px;background:{{ p.tint }};flex:none;overflow:hidden"><image-slot id="rec-{{ p.sku }}" shape="rect" placeholder=" "></image-slot></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;line-height:1.25">{{ p.name }}</div>
+            <div style="font-size:12px;color:#7a6c75;margin-top:2px">{{ p.size }} · {{ p.concern }}</div>
+            <div style="font-weight:700;font-size:14px;margin-top:4px">₹{{ p.price }}</div>
+          </div>
+          <div style="color:#9a8c95;font-size:18px;padding-right:6px">›</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- SHOP / SEARCH -->
+  <sc-if value="{{ isShop }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:110px">
+    <div style="padding:64px 20px 0">
+      <div style="height:48px;border-radius:14px;background:#fff;border:1.5px solid {{ searchBorder }};display:flex;align-items:center;gap:10px;padding:0 14px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B2A4E" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input value="{{ query }}" onChange="{{ setQuery }}" placeholder="Search products, concerns, SKUs" style="flex:1;border:0;outline:0;background:transparent;font-size:14px;color:#2B1F27" />
+        <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}"><div onClick="{{ clearQuery }}" style="width:24px;height:24px;border-radius:50%;background:#EAE3DA;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer">✕</div></sc-if>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;padding:14px 20px 0;overflow:auto">
+      <sc-for list="{{ categoryChips }}" as="c" hint-placeholder-count="5">
+        <div onClick="{{ c.tap }}" style="flex:none;height:36px;padding:0 14px;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.border }};display:flex;align-items:center;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap">{{ c.name }}</div>
+      </sc-for>
+    </div>
+    <div style="padding:16px 20px 0;font-size:12.5px;color:#7a6c75">{{ resultCount }} products · prices & stock live from Zoho Inventory</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 20px 0">
+      <sc-for list="{{ filtered }}" as="p" hint-placeholder-count="6">
+        <div style="background:#fff;border-radius:16px;border:1px solid #EFE8E0;overflow:hidden;animation:rise .3s ease both">
+          <div onClick="{{ p.open }}" style="height:140px;position:relative;cursor:pointer;background:{{ p.tint }}">
+            <image-slot id="shop-{{ p.sku }}" shape="rect" placeholder="Product photo"></image-slot>
+            <div style="position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;background:{{ p.stockBg }};color:{{ p.stockFg }};font-size:10.5px;font-weight:600;pointer-events:none">{{ p.stockLabel }}</div>
+            <div onClick="{{ p.toggleWish }}" style="position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ p.wishColor }};font-size:15px">{{ p.wishGlyph }}</div>
+          </div>
+          <div style="padding:10px 12px 12px">
+            <div onClick="{{ p.open }}" style="font-size:13.5px;font-weight:600;line-height:1.25;height:34px;overflow:hidden;cursor:pointer">{{ p.name }}</div>
+            <div style="font-size:11.5px;color:#7a6c75;margin-top:2px">{{ p.size }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <div><span style="font-weight:700;font-size:15px">₹{{ p.price }}</span> <span style="font-size:11px;color:#2E7D5B;font-weight:600">{{ p.off }}% off</span></div>
+              <div onClick="{{ p.add }}" style="width:32px;height:32px;border-radius:10px;background:{{ p.addBg }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;cursor:pointer">+</div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:40px 20px;text-align:center;color:#7a6c75;font-size:14px">Nothing matched. Try "magnesium" or "glow".</div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- PRODUCT DETAIL -->
+  <sc-if value="{{ isProduct }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:120px">
+    <div style="height:380px;position:relative;background:{{ product.tint }}">
+      <image-slot id="pdp-{{ product.sku }}" shape="rect" placeholder="Product hero photo"></image-slot>
+      <div onClick="{{ back }}" style="position:absolute;top:60px;left:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#2B1F27">‹</div>
+      <div onClick="{{ product.toggleWish }}" style="position:absolute;top:60px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ product.wishColor }};font-size:18px">{{ product.wishGlyph }}</div>
+    </div>
+    <div style="background:#FBF8F3;border-radius:24px 24px 0 0;margin-top:-24px;position:relative;padding:22px 20px 0">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div>
+          <div style="font-size:11.5px;color:#7a6c75;letter-spacing:.06em;text-transform:uppercase">{{ product.category }} · {{ product.size }}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:24px;line-height:1.2;margin-top:4px">{{ product.name }}</div>
+        </div>
+        <div style="padding:5px 10px;border-radius:999px;background:{{ product.stockBg }};color:{{ product.stockFg }};font-size:11.5px;font-weight:600;white-space:nowrap;margin-top:4px">{{ product.stockLabel }}</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:10px;margin-top:14px">
+        <div style="font-size:28px;font-weight:700">₹{{ product.price }}</div>
+        <div style="font-size:15px;color:#9a8c95;text-decoration:line-through">MRP ₹{{ product.mrp }}</div>
+        <div style="font-size:13px;color:#2E7D5B;font-weight:600">{{ product.off }}% off</div>
+      </div>
+      <div style="font-size:12px;color:#7a6c75;margin-top:2px">Inclusive of {{ product.gst }}% GST · SKU {{ product.sku }}</div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <div style="flex:1;background:#fff;border:1px solid #EFE8E0;border-radius:14px;padding:12px">
+          <div style="font-size:11px;color:#7a6c75">Delivery</div>
+          <div style="font-size:13.5px;font-weight:600;margin-top:2px">{{ product.eta }}</div>
+        </div>
+        <div style="flex:1;background:#fff;border:1px solid #EFE8E0;border-radius:14px;padding:12px">
+          <div style="font-size:11px;color:#7a6c75">Ships from</div>
+          <div style="font-size:13.5px;font-weight:600;margin-top:2px">{{ product.warehouse }}</div>
+        </div>
+      </div>
+      <div style="margin-top:22px;display:flex;flex-direction:column;gap:14px">
+        <sc-for list="{{ product.sections }}" as="s" hint-placeholder-count="3">
+          <div>
+            <div style="font-size:14px;font-weight:600">{{ s.title }}</div>
+            <div style="font-size:13.5px;color:#4d4048;line-height:1.55;margin-top:4px">{{ s.body }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 20px 40px;background:linear-gradient(180deg,rgba(251,248,243,0),#FBF8F3 30%);display:flex;gap:10px">
+    <div onClick="{{ product.add }}" style="flex:1;height:54px;border-radius:16px;border:1.5px solid #5B2A4E;color:#5B2A4E;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;cursor:pointer;background:#FBF8F3">{{ product.addLabel }}</div>
+    <div onClick="{{ product.buyNow }}" style="flex:1;height:54px;border-radius:16px;background:#5B2A4E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;cursor:pointer">Buy now</div>
+  </div>
+  </sc-if>
+
+  <!-- CART -->
+  <sc-if value="{{ isCart }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:180px">
+    <div style="padding:64px 20px 0;display:flex;align-items:center;gap:12px">
+      <div onClick="{{ back }}" style="width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #EFE8E0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px">‹</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px">Your bag</div>
+      <div style="margin-left:auto;font-size:13px;color:#7a6c75">{{ cartCount }} items</div>
+    </div>
+    <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:80px 30px;text-align:center">
+        <div style="font-family:'Playfair Display',serif;font-size:22px">Your bag is empty</div>
+        <div style="font-size:14px;color:#7a6c75;margin-top:8px;line-height:1.5">Good things are waiting. Start with a best seller.</div>
+        <div onClick="{{ goShopAll }}" style="display:inline-flex;margin-top:20px;height:48px;padding:0 24px;border-radius:14px;background:#5B2A4E;color:#fff;align-items:center;font-weight:600;cursor:pointer">Browse products</div>
+      </div>
+    </sc-if>
+    <div style="padding:16px 20px 0;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="2">
+        <div style="display:flex;gap:12px;background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:12px;align-items:center">
+          <div style="width:68px;height:68px;border-radius:12px;background:{{ it.tint }};flex:none;overflow:hidden"><image-slot id="cart-{{ it.sku }}" shape="rect" placeholder=" "></image-slot></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;line-height:1.25">{{ it.name }}</div>
+            <div style="font-size:12px;color:#7a6c75;margin-top:2px">{{ it.size }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <div style="font-weight:700;font-size:15px">₹{{ it.lineTotal }}</div>
+              <div style="display:flex;align-items:center;border:1px solid #EAE3DA;border-radius:10px;height:34px">
+                <div onClick="{{ it.dec }}" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:#5B2A4E">−</div>
+                <div style="width:26px;text-align:center;font-weight:600;font-size:14px">{{ it.qty }}</div>
+                <div onClick="{{ it.inc }}" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:#5B2A4E">+</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ false }}">
+      <div style="margin:16px 20px 0;background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <input value="{{ couponInput }}" onChange="{{ setCouponInput }}" placeholder="Coupon code" style="flex:1;height:42px;border-radius:10px;border:1px solid #EAE3DA;padding:0 12px;font-size:14px;text-transform:uppercase;outline:0;background:#FBF8F3;color:#2B1F27" />
+          <div onClick="{{ applyCoupon }}" style="height:42px;padding:0 16px;border-radius:10px;background:#5B2A4E;color:#fff;display:flex;align-items:center;font-weight:600;font-size:13px;cursor:pointer">Apply</div>
+        </div>
+        <div style="font-size:12.5px;margin-top:8px;color:{{ couponMsgColor }}">{{ couponMsg }}</div>
+      </div>
+      <div style="margin:12px 20px 0;background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:14px;font-size:13.5px">
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:#7a6c75">Item total (MRP)</span><span>₹{{ totals.mrp }}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:#7a6c75">Gowri discount</span><span style="color:#2E7D5B">−₹{{ totals.discount }}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:#7a6c75">Coupon</span><span style="color:#2E7D5B">−₹{{ totals.coupon }}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:#7a6c75">Delivery</span><span>{{ totals.deliveryLabel }}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0 2px;border-top:1px dashed #EAE3DA;margin-top:6px;font-weight:700;font-size:16px"><span>To pay</span><span>₹{{ totals.total }}</span></div>
+        <div style="font-size:11.5px;color:#9a8c95;margin-top:2px">Includes ₹{{ totals.gst }} GST · invoice from Zoho Books after delivery</div>
+      </div>
+    </sc-if>
+  </div>
+  <sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 20px 40px;background:linear-gradient(180deg,rgba(251,248,243,0),#FBF8F3 30%)">
+    <div onClick="{{ goCheckout }}" style="height:54px;border-radius:16px;background:#5B2A4E;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-weight:600;font-size:15px;cursor:pointer"><span>Checkout</span><span>₹{{ totals.total }} ›</span></div>
+  </div>
+  </sc-if>
+  </sc-if>
+
+  <!-- CHECKOUT -->
+  <sc-if value="{{ isCheckout }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:120px">
+    <div style="padding:64px 20px 0;display:flex;align-items:center;gap:12px">
+      <div onClick="{{ back }}" style="width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #EFE8E0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px">‹</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px">Checkout</div>
+    </div>
+    <div style="padding:20px 20px 0;font-size:14px;font-weight:600">Deliver to</div>
+    <div style="padding:10px 20px 0;display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ addressOptions }}" as="a" hint-placeholder-count="2">
+        <div onClick="{{ a.tap }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;border:1.5px solid {{ a.border }};padding:12px 14px;cursor:pointer;align-items:flex-start">
+          <div style="width:20px;height:20px;border-radius:50%;border:2px solid {{ a.dot }};display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px"><div style="width:10px;height:10px;border-radius:50%;background:{{ a.dotFill }}"></div></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600">{{ a.label }}</div><div style="font-size:12.5px;color:#7a6c75;margin-top:2px;line-height:1.4">{{ a.line }}</div></div>
+        </div>
+      </sc-for>
+      <div style="height:44px;border-radius:14px;border:1.5px dashed #D9CFC5;display:flex;align-items:center;justify-content:center;font-size:13.5px;color:#5B2A4E;font-weight:500">+ Add new address</div>
+    </div>
+    <div style="padding:22px 20px 0;font-size:14px;font-weight:600">Pay with</div>
+    <div style="padding:10px 20px 0;display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ paymentOptions }}" as="m" hint-placeholder-count="5">
+        <div onClick="{{ m.tap }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;border:1.5px solid {{ m.border }};padding:12px 14px;cursor:pointer;align-items:center;min-height:52px">
+          <div style="width:20px;height:20px;border-radius:50%;border:2px solid {{ m.dot }};display:flex;align-items:center;justify-content:center;flex:none"><div style="width:10px;height:10px;border-radius:50%;background:{{ m.dotFill }}"></div></div>
+          <div style="flex:1;font-size:14px;font-weight:500">{{ m.name }}</div>
+          <div style="font-size:12px;color:#7a6c75">{{ m.hint }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin:22px 20px 0;background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:14px;font-size:13.5px">
+      <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:#7a6c75">{{ cartCount }} items</span><span>₹{{ totals.afterDiscounts }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:#7a6c75">Delivery</span><span>{{ totals.deliveryLabel }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px dashed #EAE3DA;margin-top:6px;font-weight:700;font-size:16px"><span>To pay</span><span>₹{{ totals.total }}</span></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 20px 40px;background:linear-gradient(180deg,rgba(251,248,243,0),#FBF8F3 30%)">
+    <div onClick="{{ placeOrder }}" style="height:54px;border-radius:16px;background:#5B2A4E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;cursor:pointer">{{ payLabel }}</div>
+  </div>
+  </sc-if>
+
+  <!-- TRACKING -->
+  <sc-if value="{{ isTracking }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:120px">
+    <div style="padding:64px 20px 0;display:flex;align-items:center;gap:12px">
+      <div onClick="{{ goOrders }}" style="width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #EFE8E0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px">‹</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px">Order {{ order.id }}</div>
+    </div>
+    <sc-if value="{{ order.justPlaced }}" hint-placeholder-val="{{ false }}">
+      <div style="margin:18px 20px 0;border-radius:20px;background:#E6EFE9;padding:20px;color:#1F4D3A;animation:rise .4s ease both">
+        <div style="width:44px;height:44px;border-radius:50%;background:#2E7D5B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px">✓</div>
+        <div style="font-family:'Playfair Display',serif;font-size:24px;margin-top:12px">Thank you, Ananya!</div>
+        <div style="font-size:13.5px;margin-top:6px;line-height:1.5">Your order is confirmed. Sales Order {{ order.zohoSo }} is created in Zoho and your items are reserved.</div>
+      </div>
+    </sc-if>
+    <div style="margin:18px 20px 0;background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-size:14px;font-weight:600">Arriving {{ order.eta }}</div><div style="font-size:12px;color:#7a6c75">{{ order.courier }}</div></div>
+      <div style="margin-top:16px;display:flex;flex-direction:column">
+        <sc-for list="{{ order.steps }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex;gap:14px;min-height:56px">
+            <div style="display:flex;flex-direction:column;align-items:center;width:20px">
+              <div style="width:14px;height:14px;border-radius:50%;background:{{ s.dot }};border:3px solid {{ s.ring }};flex:none;animation:{{ s.anim }}"></div>
+              <div style="flex:1;width:2px;background:{{ s.line }};margin:4px 0"></div>
+            </div>
+            <div style="padding-bottom:14px"><div style="font-size:14px;font-weight:600;color:{{ s.fg }}">{{ s.title }}</div><div style="font-size:12.5px;color:#7a6c75;margin-top:2px">{{ s.sub }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="margin:12px 20px 0;background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:14px;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ order.items }}" as="it" hint-placeholder-count="2">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="width:44px;height:44px;border-radius:10px;background:{{ it.tint }};flex:none"></div>
+          <div style="flex:1;font-size:13.5px;font-weight:500">{{ it.name }} <span style="color:#7a6c75">× {{ it.qty }}</span></div>
+          <div style="font-size:13.5px;font-weight:600">₹{{ it.lineTotal }}</div>
+        </div>
+      </sc-for>
+      <div style="display:flex;justify-content:space-between;border-top:1px dashed #EAE3DA;padding-top:10px;font-size:14px;font-weight:700"><span>Paid · {{ order.payment }}</span><span>₹{{ order.total }}</span></div>
+    </div>
+    <div style="display:flex;gap:10px;margin:12px 20px 0">
+      <div style="flex:1;height:46px;border-radius:12px;border:1px solid #EAE3DA;background:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#5B2A4E">GST invoice</div>
+      <div onClick="{{ goReturns }}" style="flex:1;height:46px;border-radius:12px;border:1px solid #EAE3DA;background:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#5B2A4E;cursor:pointer">Return / help</div>
+      <div onClick="{{ reorder }}" style="flex:1;height:46px;border-radius:12px;background:#5B2A4E;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;cursor:pointer">Reorder</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ORDERS LIST -->
+  <sc-if value="{{ isOrders }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:110px">
+    <div style="padding:64px 20px 0;font-family:'Playfair Display',serif;font-size:26px">My orders</div>
+    <div style="padding:16px 20px 0;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ orders }}" as="o" hint-placeholder-count="3">
+        <div onClick="{{ o.open }}" style="background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:14px;cursor:pointer">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:14px;font-weight:600">{{ o.id }}</div>
+            <div style="padding:4px 10px;border-radius:999px;background:{{ o.badgeBg }};color:{{ o.badgeFg }};font-size:11.5px;font-weight:600">{{ o.status }}</div>
+          </div>
+          <div style="font-size:12.5px;color:#7a6c75;margin-top:4px">{{ o.summary }}</div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:13px"><span style="color:#7a6c75">{{ o.date }}</span><span style="font-weight:600">₹{{ o.total }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- WISHLIST -->
+  <sc-if value="{{ isWishlist }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:110px">
+    <div style="padding:64px 20px 0;font-family:'Playfair Display',serif;font-size:26px">Wishlist</div>
+    <sc-if value="{{ wishEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:80px 30px;text-align:center"><div style="font-family:'Playfair Display',serif;font-size:22px">Nothing saved yet</div><div style="font-size:14px;color:#7a6c75;margin-top:8px">Tap the heart on any product to keep it here.</div></div>
+    </sc-if>
+    <div style="padding:16px 20px 0;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ wishItems }}" as="p" hint-placeholder-count="2">
+        <div style="display:flex;gap:12px;background:#fff;border-radius:16px;border:1px solid #EFE8E0;padding:10px;align-items:center">
+          <div onClick="{{ p.open }}" style="width:64px;height:64px;border-radius:12px;background:{{ p.tint }};flex:none;cursor:pointer"></div>
+          <div onClick="{{ p.open }}" style="flex:1;min-width:0;cursor:pointer">
+            <div style="font-size:14px;font-weight:600;line-height:1.25">{{ p.name }}</div>
+            <div style="font-size:12px;color:{{ p.stockFg }};margin-top:2px;font-weight:500">{{ p.stockLabel }} · ₹{{ p.price }}</div>
+          </div>
+          <div onClick="{{ p.add }}" style="height:36px;padding:0 12px;border-radius:10px;background:#5B2A4E;color:#fff;display:flex;align-items:center;font-size:12.5px;font-weight:600;cursor:pointer">Add</div>
+          <div onClick="{{ p.toggleWish }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#9a8c95;cursor:pointer">✕</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- COUPONS -->
+  <sc-if value="{{ isCoupons }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:110px">
+    <div style="padding:64px 20px 0;display:flex;align-items:center;gap:12px">
+      <div onClick="{{ back }}" style="width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #EFE8E0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px">‹</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px">Offers & coupons</div>
+    </div>
+    <div style="padding:16px 20px 0;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ coupons }}" as="c" hint-placeholder-count="3">
+        <div style="display:flex;background:#fff;border-radius:16px;border:1px solid #EFE8E0;overflow:hidden">
+          <div style="width:64px;background:#5B2A4E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.06em">{{ c.value }}</div>
+          <div style="flex:1;padding:14px">
+            <div style="font-size:15px;font-weight:600">{{ c.code }}</div>
+            <div style="font-size:12.5px;color:#7a6c75;margin-top:2px;line-height:1.4">{{ c.desc }}</div>
+            <div onClick="{{ c.use }}" style="display:inline-flex;margin-top:10px;height:34px;padding:0 14px;border-radius:999px;border:1px solid #5B2A4E;color:#5B2A4E;align-items:center;font-size:12.5px;font-weight:600;cursor:pointer">{{ c.cta }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- RETURNS -->
+  <sc-if value="{{ isReturns }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:110px">
+    <div style="padding:64px 20px 0;display:flex;align-items:center;gap:12px">
+      <div onClick="{{ back }}" style="width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #EFE8E0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px">‹</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px">Return an item</div>
+    </div>
+    <sc-if value="{{ returnDone }}" hint-placeholder-val="{{ false }}">
+      <div style="margin:18px 20px 0;border-radius:20px;background:#E6EFE9;padding:20px;color:#1F4D3A;animation:rise .4s ease both">
+        <div style="font-family:'Playfair Display',serif;font-size:22px">Return requested</div>
+        <div style="font-size:13.5px;margin-top:6px;line-height:1.5">We'll pick it up in 2 days. Refund of ₹{{ returnAmount }} reaches you within 5 days of pickup (credit note in Zoho Books).</div>
+        <div onClick="{{ goOrders }}" style="display:inline-flex;margin-top:14px;height:42px;padding:0 18px;border-radius:12px;background:#2E7D5B;color:#fff;align-items:center;font-weight:600;font-size:13.5px;cursor:pointer">Back to orders</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ returnForm }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:16px 20px 0;font-size:14px;font-weight:600">From order {{ order.id }}</div>
+      <div style="padding:10px 20px 0;display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ returnItems }}" as="it" hint-placeholder-count="2">
+          <div onClick="{{ it.tap }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;border:1.5px solid {{ it.border }};padding:12px;align-items:center;cursor:pointer">
+            <div style="width:22px;height:22px;border-radius:6px;border:2px solid {{ it.dot }};background:{{ it.dotFill }};display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex:none">{{ it.check }}</div>
+            <div style="flex:1;font-size:13.5px;font-weight:500">{{ it.name }}</div>
+            <div style="font-size:13px;font-weight:600">₹{{ it.lineTotal }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="padding:20px 20px 0;font-size:14px;font-weight:600">Reason</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 20px 0">
+        <sc-for list="{{ reasons }}" as="r" hint-placeholder-count="4">
+          <div onClick="{{ r.tap }}" style="height:38px;padding:0 14px;border-radius:999px;background:{{ r.bg }};color:{{ r.fg }};border:1px solid {{ r.border }};display:flex;align-items:center;font-size:13px;font-weight:500;cursor:pointer">{{ r.name }}</div>
+        </sc-for>
+      </div>
+      <div style="padding:20px 20px 0;font-size:12.5px;color:#7a6c75;line-height:1.5">Sealed wellness products can be returned within 7 days of delivery. Opened consumables can't be returned, but tell us what went wrong and we'll make it right.</div>
+      <div style="padding:20px 20px 0">
+        <div onClick="{{ submitReturn }}" style="height:54px;border-radius:16px;background:{{ returnBg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;cursor:pointer">Request pickup</div>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- PROFILE -->
+  <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding-bottom:110px">
+    <div style="padding:64px 20px 0;display:flex;align-items:center;gap:14px">
+      <div style="width:56px;height:56px;border-radius:50%;background:#5B2A4E;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:22px">A</div>
+      <div><div style="font-size:18px;font-weight:600">Ananya Rao</div><div style="font-size:13px;color:#7a6c75">+91 {{ phone }} · Member since 2024</div></div>
+    </div>
+    <div style="margin:18px 20px 0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div onClick="{{ goOrders }}" style="background:#fff;border:1px solid #EFE8E0;border-radius:14px;padding:12px;cursor:pointer"><div style="font-size:20px;font-weight:700">{{ orderCount }}</div><div style="font-size:12px;color:#7a6c75">Orders</div></div>
+      <div onClick="{{ goWishlist }}" style="background:#fff;border:1px solid #EFE8E0;border-radius:14px;padding:12px;cursor:pointer"><div style="font-size:20px;font-weight:700">{{ wishCount }}</div><div style="font-size:12px;color:#7a6c75">Saved</div></div>
+      <div onClick="{{ goCoupons }}" style="background:#fff;border:1px solid #EFE8E0;border-radius:14px;padding:12px;cursor:pointer"><div style="font-size:20px;font-weight:700">3</div><div style="font-size:12px;color:#7a6c75">Coupons</div></div>
+    </div>
+    <div style="padding:22px 20px 0;font-size:14px;font-weight:600">Saved addresses</div>
+    <div style="padding:10px 20px 0;display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ addressOptions }}" as="a" hint-placeholder-count="2">
+        <div style="display:flex;gap:12px;background:#fff;border-radius:14px;border:1px solid #EFE8E0;padding:12px 14px;align-items:flex-start">
+          <div style="flex:1"><div style="font-size:14px;font-weight:600">{{ a.label }} <span style="font-size:11px;color:#5B2A4E;font-weight:600;margin-left:6px">{{ a.defaultTag }}</span></div><div style="font-size:12.5px;color:#7a6c75;margin-top:2px;line-height:1.4">{{ a.line }}</div></div>
+          <div style="font-size:13px;color:#5B2A4E;font-weight:500">Edit</div>
+        </div>
+      </sc-for>
+      <div style="height:44px;border-radius:14px;border:1.5px dashed #D9CFC5;display:flex;align-items:center;justify-content:center;font-size:13.5px;color:#5B2A4E;font-weight:500">+ Add new address</div>
+    </div>
+    <div style="margin:22px 20px 0;background:#fff;border-radius:16px;border:1px solid #EFE8E0;overflow:hidden">
+      <sc-for list="{{ profileRows }}" as="r" hint-placeholder-count="5">
+        <div onClick="{{ r.tap }}" style="display:flex;align-items:center;min-height:50px;padding:0 14px;border-bottom:1px solid #F3EDE6;font-size:14px;cursor:pointer"><span style="flex:1">{{ r.name }}</span><span style="font-size:12px;color:#7a6c75;margin-right:8px">{{ r.hint }}</span><span style="color:#9a8c95">›</span></div>
+      </sc-for>
+    </div>
+    <div onClick="{{ logout }}" style="margin:16px 20px 0;height:46px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#B5563A;font-weight:500;cursor:pointer">Log out</div>
+  </div>
+  </sc-if>
+
+  <!-- TAB BAR -->
+  <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:14px;right:14px;bottom:30px;height:66px;border-radius:22px;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border:1px solid rgba(0,0,0,.06);box-shadow:0 8px 24px rgba(43,31,39,.10);display:flex;align-items:center;padding:0 6px">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+      <div onClick="{{ t.tap }}" style="flex:1;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ t.color }};position:relative">
+        <div style="font-size:19px;line-height:1">{{ t.glyph }}</div>
+        <div style="font-size:10.5px;font-weight:{{ t.weight }}">{{ t.name }}</div>
+        <sc-if value="{{ t.badge }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:6px;right:18px;min-width:18px;height:18px;border-radius:9px;background:#B5563A;color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px">{{ t.badge }}</div></sc-if>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <!-- TOAST -->
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:20px;right:20px;bottom:110px;background:#2B1F27;color:#fff;border-radius:14px;padding:12px 16px;font-size:13.5px;font-weight:500;display:flex;justify-content:space-between;align-items:center;animation:rise .25s ease both;z-index:5">
+      <span>{{ toast }}</span><span onClick="{{ goCart }}" style="color:#F1C6E4;font-weight:600;cursor:pointer">View bag</span>
+    </div>
+  </sc-if>
+
+  </div>
+  </sc-if>
+  </div>
+  </x-import>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;max-width:402px">
+    <sc-for list="{{ jumpLinks }}" as="j" hint-placeholder-count="6">
+      <div onClick="{{ j.tap }}" style="font:500 11px system-ui,sans-serif;padding:5px 9px;border-radius:6px;background:{{ j.bg }};color:{{ j.fg }};cursor:pointer">{{ j.name }}</div>
+    </sc-for>
+  </div>
+</div>
+
+<div class="dv-opt" id="1b">
+  <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Home alt: "Quick-commerce grid" (category chips + offer rail) · <span onClick="{{ useGridHome }}" style="color:#5B2A4E;font-weight:600;cursor:pointer;text-decoration:underline">use in 1a</span></div>
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+  <div style="width:100%;height:100%;background:#FBF8F3;position:relative;display:flex;flex-direction:column;font-family:'Outfit',system-ui,sans-serif;color:#2B1F27">
+    <div style="flex:1;overflow:auto;padding-bottom:110px">
+      <div style="padding:64px 20px 0;display:flex;align-items:center;justify-content:space-between">
+        <div><div style="font-size:12px;color:#7a6c75">Deliver to</div><div style="font-size:14px;font-weight:600">Home · Jubilee Hills 500033 <span style="color:#5B2A4E">▾</span></div></div>
+        <div style="font-family:'Playfair Display',serif;font-size:26px;color:#5B2A4E">gowri</div>
+      </div>
+      <div style="margin:16px 20px 0;height:48px;border-radius:14px;background:#fff;border:1px solid #EAE3DA;display:flex;align-items:center;gap:10px;padding:0 14px;color:#9a8c95;font-size:14px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B2A4E" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Search Gowri products
+      </div>
+      <div style="display:flex;gap:8px;padding:16px 20px 0;overflow:auto">
+        <sc-for list="{{ categoryChips }}" as="c" hint-placeholder-count="5">
+          <div style="flex:none;height:36px;padding:0 14px;border-radius:999px;background:#fff;border:1px solid #EAE3DA;display:flex;align-items:center;font-size:13px;font-weight:500;white-space:nowrap">{{ c.name }}</div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:10px;padding:16px 20px 0;overflow:auto">
+        <div style="flex:none;width:280px;border-radius:18px;background:#F1E6EE;padding:18px;color:#5B2A4E">
+          <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Offer</div>
+          <div style="font-size:19px;font-weight:600;margin-top:6px;line-height:1.2">Flat 20% off on Sleep & Stress</div>
+          <div style="font-size:12.5px;margin-top:6px;opacity:.8">Code SLEEP20 · till Sunday</div>
+        </div>
+        <div style="flex:none;width:280px;border-radius:18px;background:#E6EFE9;padding:18px;color:#1F4D3A">
+          <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600">New launch</div>
+          <div style="font-size:19px;font-weight:600;margin-top:6px;line-height:1.2">MyGlo Vitamin D3 Drops</div>
+          <div style="font-size:12.5px;margin-top:6px;opacity:.8">Sunshine in a bottle · ₹399</div>
+        </div>
+      </div>
+      <div style="padding:24px 20px 0;display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-size:17px;font-weight:600">Best sellers</div>
+        <div style="font-size:13px;color:#5B2A4E;font-weight:500">See all</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 20px 0">
+        <sc-for list="{{ products }}" as="p" hint-placeholder-count="6">
+          <div style="background:#fff;border-radius:16px;border:1px solid #EFE8E0;overflow:hidden">
+            <div style="height:130px;position:relative;background:{{ p.tint }}">
+              <image-slot id="alt-{{ p.sku }}" shape="rect" placeholder="Product photo"></image-slot>
+              <div style="position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;background:{{ p.stockBg }};color:{{ p.stockFg }};font-size:10.5px;font-weight:600;pointer-events:none">{{ p.stockLabel }}</div>
+            </div>
+            <div style="padding:10px 12px 12px">
+              <div style="font-size:13.5px;font-weight:600;line-height:1.25;height:34px;overflow:hidden">{{ p.name }}</div>
+              <div style="font-size:11.5px;color:#7a6c75;margin-top:2px">{{ p.size }}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+                <div><span style="font-weight:700;font-size:15px">₹{{ p.price }}</span> <span style="font-size:11px;color:#2E7D5B;font-weight:600">{{ p.off }}% off</span></div>
+                <div style="height:32px;padding:0 12px;border-radius:10px;border:1.5px solid #5B2A4E;color:#5B2A4E;display:flex;align-items:center;font-size:12.5px;font-weight:600">Add</div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="position:absolute;left:14px;right:14px;bottom:30px;height:66px;border-radius:22px;background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.06);box-shadow:0 8px 24px rgba(43,31,39,.10);display:flex;align-items:center;padding:0 6px">
+      <sc-for list="{{ tabsStatic }}" as="t" hint-placeholder-count="5">
+        <div style="flex:1;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ t.color }}">
+          <div style="font-size:19px;line-height:1">{{ t.glyph }}</div>
+          <div style="font-size:10.5px;font-weight:{{ t.weight }}">{{ t.name }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </x-import>
+</div>
+
+</div>
+<p class="dv-next">Try next: "make <a class="dv-oid" href="#1b">1b</a> the default home" · "add a prescription-upload flow for Rx products" · "show the Android version" · "add a subscription / repeat-purchase option on the product page"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;gridHomeDefault&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Home&quot;},&quot;lowStockThreshold&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:15,&quot;min&quot;:1,&quot;max&quot;:100,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Inventory&quot;}}">
+const PRODUCTS = [
+  {sku:'MG-MAG-200',name:'MyGlo Magnesium Body Spray',size:'200 ml',mrp:550,price:440,gst:18,stock:327,category:'Body',concern:'Sleep & Stress',tint:'#E9DCE6',best:true,rec:false,
+   sections:[{title:'What it does',body:'Transdermal magnesium chloride that relaxes tired muscles and helps you wind down before bed.'},{title:'How to use',body:'Spray 5–8 times on arms, legs or feet after a shower. Massage in. A light tingle is normal for the first week.'},{title:'Ingredients',body:'Magnesium chloride (Zechstein), purified water, lavender oil.'},{title:'Good to know',body:'Avoid broken skin. Not for children under 12. Store below 30°C.'}]},
+  {sku:'MG-D3-30',name:'MyGlo Vitamin D3 Drops',size:'30 ml',mrp:450,price:399,gst:18,stock:6,category:'Vitamins',concern:'Immunity',tint:'#F3E7CF',best:true,rec:true,
+   sections:[{title:'What it does',body:'600 IU per drop of plant-based D3 for bones, mood and immunity.'},{title:'How to use',body:'One drop daily on the tongue or in food, with a meal.'},{title:'Ingredients',body:'Vitamin D3 (lichen), MCT oil.'},{title:'Good to know',body:'Consult your doctor if pregnant or on medication.'}]},
+  {sku:'GW-ASH-60',name:'Ashwagandha Calm Capsules',size:'60 capsules',mrp:699,price:559,gst:12,stock:142,category:'Herbal',concern:'Sleep & Stress',tint:'#DCE7DD',best:true,rec:false,
+   sections:[{title:'What it does',body:'KSM-66 ashwagandha, 600 mg a day, to steady stress and support restful sleep.'},{title:'How to use',body:'One capsule after breakfast, one after dinner.'},{title:'Ingredients',body:'Ashwagandha root extract, vegetarian capsule.'},{title:'Good to know',body:'Not recommended during pregnancy.'}]},
+  {sku:'GW-GLW-50',name:'Glow Vitamin C Face Serum',size:'50 ml',mrp:899,price:719,gst:18,stock:0,category:'Skin',concern:'Skin & Glow',tint:'#F6DDD3',best:true,rec:false,
+   sections:[{title:'What it does',body:'10% stabilised vitamin C with hyaluronic acid for brighter, even-toned skin.'},{title:'How to use',body:'3–4 drops on clean skin every morning. Follow with SPF.'},{title:'Ingredients',body:'Ethyl ascorbic acid, sodium hyaluronate, niacinamide.'},{title:'Good to know',body:'Patch test first. Keep away from sunlight.'}]},
+  {sku:'GW-PRO-30',name:'Daily Probiotic Sachets',size:'30 sachets',mrp:1299,price:1039,gst:12,stock:88,category:'Gut',concern:'Digestion',tint:'#E4E6EE',best:false,rec:true,
+   sections:[{title:'What it does',body:'10 billion CFU across 6 strains to settle bloating and support regular digestion.'},{title:'How to use',body:'One sachet in water before breakfast.'},{title:'Ingredients',body:'L. rhamnosus, B. lactis, FOS prebiotic fibre.'},{title:'Good to know',body:'Store in a cool, dry place.'}]},
+  {sku:'GW-HAIR-100',name:'Bhringraj Hair Oil',size:'100 ml',mrp:399,price:339,gst:18,stock:210,category:'Hair',concern:'Hair & Scalp',tint:'#E6E9D8',best:false,rec:false,
+   sections:[{title:'What it does',body:'Cold-pressed bhringraj and amla oil to reduce fall and nourish the scalp.'},{title:'How to use',body:'Warm slightly, massage into scalp, leave 1 hour, wash.'},{title:'Ingredients',body:'Bhringraj, amla, coconut oil, curry leaf.'},{title:'Good to know',body:'For external use only.'}]},
+  {sku:'GW-SLP-120',name:'Sleep Ritual Herbal Tea',size:'20 bags',mrp:349,price:279,gst:5,stock:14,category:'Herbal',concern:'Sleep & Stress',tint:'#DDE4EC',best:false,rec:false,
+   sections:[{title:'What it does',body:'Chamomile, brahmi and lemongrass to ease you into sleep without grogginess.'},{title:'How to use',body:'Steep one bag for 5 minutes, 30 minutes before bed.'},{title:'Ingredients',body:'Chamomile, brahmi, lemongrass, tulsi.'},{title:'Good to know',body:'Caffeine free.'}]},
+  {sku:'GW-SPF-50',name:'Mineral Sunscreen SPF 50',size:'50 g',mrp:649,price:519,gst:18,stock:73,category:'Skin',concern:'Skin & Glow',tint:'#F7E9D2',best:false,rec:false,
+   sections:[{title:'What it does',body:'Zinc-oxide broad spectrum sunscreen, no white cast, non-greasy.'},{title:'How to use',body:'Apply generously 15 minutes before sun. Reapply every 2 hours.'},{title:'Ingredients',body:'Zinc oxide 18%, squalane, vitamin E.'},{title:'Good to know',body:'Reef safe. Fragrance free.'}]},
+];
+const CATEGORIES = ['All','Vitamins','Herbal','Skin','Body','Hair','Gut'];
+const CONCERNS = [{name:'Sleep & Stress',bg:'#E9DCE6',fg:'#5B2A4E'},{name:'Skin & Glow',bg:'#F6DDD3',fg:'#8A3F2A'},{name:'Immunity',bg:'#F3E7CF',fg:'#7A5A16'},{name:'Digestion',bg:'#DCE7DD',fg:'#1F4D3A'}];
+const ADDRESSES = [{label:'Home',line:'Plot 42, Road No. 10, Jubilee Hills, Hyderabad 500033'},{label:'Office',line:'Gowri Life Sciences, HITEC City, Hyderabad 500081'}];
+const PAYMENTS = [{name:'UPI',hint:'GPay, PhonePe, Paytm'},{name:'Card',hint:'Visa, Mastercard, RuPay'},{name:'Wallet',hint:'Amazon Pay, Mobikwik'},{name:'Net banking',hint:'All major banks'},{name:'Cash on delivery',hint:'₹30 handling'}];
+const COUPONS = [{code:'SLEEP20',value:'20% OFF',desc:'20% off Sleep & Stress products. Min. order ₹499.',pct:20,concern:'Sleep & Stress'},{code:'GLOW10',value:'10% OFF',desc:'10% off your whole bag. Valid on first order.',pct:10},{code:'FREESHIP',value:'FREE',desc:'Free delivery on any order.',ship:true}];
+const REASONS = ['Damaged in transit','Wrong item','Not as described','Changed my mind'];
+const PAST = [
+  {id:'GW-10432',zohoSo:'SO-00432',date:'12 Sep 2026',status:'Delivered',items:[{sku:'GW-ASH-60',qty:1},{sku:'GW-SLP-120',qty:2}],payment:'UPI',stage:4},
+  {id:'GW-10311',zohoSo:'SO-00311',date:'28 Aug 2026',status:'Delivered',items:[{sku:'MG-MAG-200',qty:1}],payment:'Card',stage:4},
+];
+const STEPS = ['Order confirmed','Packed at warehouse','Shipped','Out for delivery','Delivered'];
+const bySku = s => PRODUCTS.find(p => p.sku === s);
+
+class Component extends DCLogic {
+  state = { screen:'login', tab:'home', phone:'', otp:'', otpStage:false, cart:{}, wish:['GW-GLW-50'], sku:null, query:'', cat:'All', addr:0, pay:0, couponInput:'', coupon:null, couponMsg:'', couponOk:false, orders:PAST, order:null, justPlaced:false, toast:'', retSel:{}, retReason:null, retDone:false, gridHome:false, history:[] };
+  go(screen, extra={}) { this.setState(s => ({ screen, history:[...s.history, s.screen].slice(-8), toast:'', ...extra })); }
+  back = () => this.setState(s => { const h=[...s.history]; const prev=h.pop()||'home'; return { screen:prev, history:h, toast:'' }; });
+  componentDidMount() { if (this.props.gridHomeDefault) this.setState({gridHome:true}); }
+  componentDidUpdate(prev) { if (prev.gridHomeDefault!==this.props.gridHomeDefault) this.setState({gridHome:!!this.props.gridHomeDefault}); }
+  stock(p) { if (p.stock===0) return {stockLabel:'Out of stock',stockBg:'#F3E3DE',stockFg:'#B5563A'}; if (p.stock<=(this.props.lowStockThreshold ?? 15)) return {stockLabel:`Only ${p.stock} left`,stockBg:'#FBEBD2',stockFg:'#8A5A12'}; return {stockLabel:'In stock',stockBg:'#E1F0E7',stockFg:'#2E7D5B'}; }
+  addToCart(sku) { const p=bySku(sku); if (p.stock===0) { this.setState({toast:'Out of stock — we\'ll notify you'}); return; } this.setState(s => { const q=(s.cart[sku]||0); if (q>=p.stock) return {toast:`Only ${p.stock} in stock`}; return { cart:{...s.cart,[sku]:q+1}, toast:`${p.name} added` }; }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:''}),2200); }
+  setQty(sku,d) { this.setState(s => { const c={...s.cart}; const q=(c[sku]||0)+d; if (q<=0) delete c[sku]; else c[sku]=Math.min(q,bySku(sku).stock); return {cart:c}; }); }
+  decorate(p) { const s=this.state; return { ...p, ...this.stock(p), off:Math.round((1-p.price/p.mrp)*100), open:()=>this.go('product',{sku:p.sku}), add:()=>this.addToCart(p.sku), addBg:p.stock===0?'#C9BFC6':'#5B2A4E', toggleWish:()=>this.setState(st=>({wish:st.wish.includes(p.sku)?st.wish.filter(x=>x!==p.sku):[...st.wish,p.sku]})), wishGlyph:s.wish.includes(p.sku)?'♥':'♡', wishColor:s.wish.includes(p.sku)?'#B5563A':'#2B1F27' }; }
+  totals(cart, coupon) {
+    const items=Object.entries(cart).map(([sku,qty])=>({...bySku(sku),qty}));
+    const mrp=items.reduce((a,i)=>a+i.mrp*i.qty,0), sell=items.reduce((a,i)=>a+i.price*i.qty,0);
+    let cp=0, ship = sell>=499||sell===0 ? 0 : 49;
+    if (coupon) { if (coupon.ship) ship=0; else if (coupon.concern) cp=Math.round(items.filter(i=>i.concern===coupon.concern).reduce((a,i)=>a+i.price*i.qty,0)*coupon.pct/100); else cp=Math.round(sell*coupon.pct/100); }
+    const cod = this.state.pay===4 && items.length ? 30 : 0;
+    const after=sell-cp, total=after+ship+cod;
+    const gst=Math.round(items.reduce((a,i)=>a+i.price*i.qty*(i.gst/(100+i.gst)),0));
+    return { items, mrp, discount:mrp-sell, coupon:cp, afterDiscounts:after, deliveryLabel: ship===0? (cod?'Free + ₹30 COD':'Free') : `₹${ship}${cod?' + ₹30 COD':''}`, total, gst };
+  }
+  renderVals() {
+    const s=this.state, sc=s.screen;
+    const isLogin=sc==='login', showTabs=['home','shop','wishlist','orders','profile'].includes(sc);
+    const t=this.totals(s.cart, s.coupon);
+    const cartCount=Object.values(s.cart).reduce((a,b)=>a+b,0);
+    const q=s.query.trim().toLowerCase();
+    const filtered=PRODUCTS.filter(p=>(s.cat==='All'||p.category===s.cat||p.concern===s.cat)&&(!q||p.name.toLowerCase().includes(q)||p.concern.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q))).map(p=>this.decorate(p));
+    const order = s.order ? (()=>{ const o=s.order; const items=o.items.map(i=>({...bySku(i.sku),qty:i.qty,lineTotal:bySku(i.sku).price*i.qty})); return { ...o, items, total:o.total ?? items.reduce((a,i)=>a+i.lineTotal,0), justPlaced:s.justPlaced, eta:o.stage>=4?'delivered '+o.date:'Sat, 27 Sep', courier:o.stage>=4?'Delhivery':'Delhivery · AWB pending', steps:STEPS.map((title,i)=>{ const done=i<o.stage, cur=i===o.stage; return { title, sub: done?'Done':cur?(i===0?'Sales Order '+o.zohoSo+' created in Zoho':'In progress'):'Pending', dot:done||cur?'#5B2A4E':'#fff', ring:done||cur?'#5B2A4E':'#D9CFC5', line:done?'#5B2A4E':'#EAE3DA', fg:done||cur?'#2B1F27':'#9a8c95', anim:cur?'pulse 1.4s ease-in-out infinite':'none' }; }) }; })() : {steps:[],items:[]};
+    const retAmount = order.items ? order.items.filter(i=>s.retSel[i.sku]).reduce((a,i)=>a+i.lineTotal,0) : 0;
+    const tabDefs=[{k:'home',name:'Home',glyph:'⌂'},{k:'shop',name:'Shop',glyph:'☰'},{k:'cart',name:'Bag',glyph:'▢',badge:cartCount||false},{k:'orders',name:'Orders',glyph:'◷'},{k:'profile',name:'Me',glyph:'◯'}];
+    const tabs=tabDefs.map(d=>({ ...d, tap:()=>this.go(d.k), color:sc===d.k?'#5B2A4E':'#8b7d86', weight:sc===d.k?600:500 }));
+    const go=(k)=>()=>this.go(k);
+    return {
+      isLogin, isApp:!isLogin, isHome:sc==='home', isShop:sc==='shop', isProduct:sc==='product', isCart:sc==='cart', isCheckout:sc==='checkout', isTracking:sc==='tracking', isOrders:sc==='orders', isWishlist:sc==='wishlist', isCoupons:sc==='coupons', isReturns:sc==='returns', isProfile:sc==='profile', showTabs,
+      homeEditorial:!s.gridHome, homeGrid:s.gridHome, useGridHome:()=>this.setState({gridHome:!s.gridHome, screen: s.screen==='login'?'login':'home'}),
+      phone:s.phone, setPhone:e=>this.setState({phone:e.target.value.replace(/\D/g,'').slice(0,10)}), sendBg:s.phone.length===10?'#5B2A4E':'#C9BFC6',
+      sendOtp:()=>{ if (s.phone.length===10) this.setState({otpStage:true,otp:''}); }, otpStage:s.otpStage, phoneStage:!s.otpStage, backToPhone:()=>this.setState({otpStage:false}),
+      otpBoxes:[0,1,2,3].map(i=>({ch:s.otp[i]||'',border:i===s.otp.length?'#5B2A4E':'#E4DCD3'})),
+      keypad:['1','2','3','4','5','6','7','8','9','','0','⌫'].map(k=>({label:k,bg:k===''?'transparent':k==='⌫'?'#F1E6EE':'#F5F0EA',tap:()=>{ if(k==='')return; if(k==='⌫'){this.setState({otp:s.otp.slice(0,-1)});return;} const n=(s.otp+k).slice(0,4); this.setState({otp:n}); if(n.length===4) setTimeout(()=>this.setState({screen:'home',otpStage:false,otp:''}),350); }})),
+      goSearch:()=>this.go('shop',{query:'',cat:'All'}), goShopAll:()=>this.go('shop',{cat:'All',query:''}), goShopConcernSleep:()=>this.go('shop',{cat:'Sleep & Stress',query:''}), goCart:go('cart'), goCheckout:go('checkout'), goOrders:()=>this.go('orders',{justPlaced:false}), goWishlist:go('wishlist'), goCoupons:go('coupons'), goReturns:()=>this.go('returns',{retSel:{},retReason:null,retDone:false}), back:this.back,
+      logout:()=>this.setState({screen:'login',otpStage:false,otp:'',history:[]}),
+      concerns:CONCERNS.map(c=>({...c,count:PRODUCTS.filter(p=>p.concern===c.name).length,tap:()=>this.go('shop',{cat:c.name,query:''})})),
+      categoryChips:CATEGORIES.map(c=>({name:c,tap:()=>this.setState({cat:c,screen:'shop'}),bg:s.cat===c?'#5B2A4E':'#fff',fg:s.cat===c?'#fff':'#2B1F27',border:s.cat===c?'#5B2A4E':'#EAE3DA'})),
+      products:PRODUCTS.map(p=>this.decorate(p)), bestSellers:PRODUCTS.filter(p=>p.best).map(p=>this.decorate(p)), recommended:PRODUCTS.filter(p=>p.rec).map(p=>this.decorate(p)),
+      query:s.query, setQuery:e=>this.setState({query:e.target.value}), hasQuery:!!q, clearQuery:()=>this.setState({query:''}), searchBorder:q?'#5B2A4E':'#EAE3DA', filtered, resultCount:filtered.length, noResults:filtered.length===0,
+      product:(()=>{ const p=bySku(s.sku)||PRODUCTS[0]; const d=this.decorate(p); const inCart=s.cart[p.sku]||0; return {...d, eta:p.stock===0?'Notify me':'Sat 27 Sep · free above ₹499', warehouse:'Hyderabad', addLabel:p.stock===0?'Notify me':inCart?`In bag · ${inCart}`:'Add to bag', buyNow:()=>{ if(p.stock===0){this.setState({toast:'Out of stock — we\'ll notify you'});return;} if(!inCart) this.setState(st=>({cart:{...st.cart,[p.sku]:1}})); this.go('checkout'); }}; })(),
+      cartCount, cartEmpty:cartCount===0, cartHasItems:cartCount>0,
+      cartItems:t.items.map(i=>({...i,lineTotal:i.price*i.qty,inc:()=>this.setQty(i.sku,1),dec:()=>this.setQty(i.sku,-1)})),
+      totals:t, couponInput:s.couponInput, setCouponInput:e=>this.setState({couponInput:e.target.value}),
+      applyCoupon:()=>{ const c=COUPONS.find(c=>c.code===s.couponInput.trim().toUpperCase()); if(!c){this.setState({coupon:null,couponMsg:'Hmm, that code isn\'t valid.',couponOk:false});return;} this.setState({coupon:c,couponMsg:`${c.code} applied. Nice.`,couponOk:true}); },
+      couponMsg:s.couponMsg, couponMsgColor:s.couponOk?'#2E7D5B':'#B5563A',
+      addressOptions:ADDRESSES.map((a,i)=>({...a,tap:()=>this.setState({addr:i}),border:s.addr===i?'#5B2A4E':'#EFE8E0',dot:s.addr===i?'#5B2A4E':'#D9CFC5',dotFill:s.addr===i?'#5B2A4E':'transparent',defaultTag:i===0?'DEFAULT':''})),
+      paymentOptions:PAYMENTS.map((m,i)=>({...m,tap:()=>this.setState({pay:i}),border:s.pay===i?'#5B2A4E':'#EFE8E0',dot:s.pay===i?'#5B2A4E':'#D9CFC5',dotFill:s.pay===i?'#5B2A4E':'transparent'})),
+      payLabel: s.pay===4 ? `Place order · ₹${t.total}` : `Pay ₹${t.total} with ${PAYMENTS[s.pay].name}`,
+      placeOrder:()=>{ if(!cartCount)return; const n=10500+s.orders.length; const o={id:'GW-'+n,zohoSo:'SO-00'+(n-10000),date:'25 Sep 2026',status:'Confirmed',items:t.items.map(i=>({sku:i.sku,qty:i.qty})),payment:PAYMENTS[s.pay].name,stage:0,total:t.total}; this.setState({orders:[o,...s.orders],order:o,cart:{},coupon:null,couponInput:'',couponMsg:'',screen:'tracking',justPlaced:true,history:[]}); setTimeout(()=>this.setState(st=>({order:st.order&&st.order.id===o.id?{...st.order,stage:1}:st.order, orders:st.orders.map(x=>x.id===o.id?{...x,stage:1,status:'Packed'}:x)})),3000); },
+      order, reorder:()=>{ const c={}; order.items.forEach(i=>{ if(bySku(i.sku).stock>0) c[i.sku]=Math.min(i.qty,bySku(i.sku).stock); }); this.setState({cart:c}); this.go('cart'); },
+      orders:s.orders.map(o=>({...o,total:o.total ?? o.items.reduce((a,i)=>a+bySku(i.sku).price*i.qty,0),summary:o.items.map(i=>bySku(i.sku).name+(i.qty>1?' ×'+i.qty:'')).join(', '),badgeBg:o.stage>=4?'#E1F0E7':'#F1E6EE',badgeFg:o.stage>=4?'#2E7D5B':'#5B2A4E',open:()=>this.go('tracking',{order:o,justPlaced:false})})),
+      orderCount:s.orders.length, wishCount:s.wish.length, wishEmpty:s.wish.length===0, wishItems:s.wish.map(k=>this.decorate(bySku(k))),
+      coupons:COUPONS.map(c=>({...c,cta:s.coupon&&s.coupon.code===c.code?'Applied':'Apply to bag',use:()=>{ this.setState({coupon:c,couponInput:c.code,couponMsg:`${c.code} applied. Nice.`,couponOk:true}); this.go('cart'); }})),
+      returnDone:s.retDone, returnForm:!s.retDone, returnAmount:retAmount,
+      returnItems:(order.items||[]).map(i=>({...i,tap:()=>this.setState(st=>({retSel:{...st.retSel,[i.sku]:!st.retSel[i.sku]}})),border:s.retSel[i.sku]?'#5B2A4E':'#EFE8E0',dot:s.retSel[i.sku]?'#5B2A4E':'#D9CFC5',dotFill:s.retSel[i.sku]?'#5B2A4E':'transparent',check:s.retSel[i.sku]?'✓':''})),
+      reasons:REASONS.map(r=>({name:r,tap:()=>this.setState({retReason:r}),bg:s.retReason===r?'#5B2A4E':'#fff',fg:s.retReason===r?'#fff':'#2B1F27',border:s.retReason===r?'#5B2A4E':'#EAE3DA'})),
+      returnBg: retAmount>0&&s.retReason?'#5B2A4E':'#C9BFC6', submitReturn:()=>{ if(retAmount>0&&s.retReason) this.setState({retDone:true}); },
+      profileRows:[{name:'Coupons & offers',hint:'3 available',tap:go('coupons')},{name:'GST invoices',hint:'From Zoho Books',tap:go('orders')},{name:'Notifications',hint:'On',tap:()=>{}},{name:'Help & support',hint:'WhatsApp',tap:()=>{}},{name:'About Gowri',hint:'',tap:()=>{}}],
+      tabs, tabsStatic:tabDefs.map(d=>({...d,color:d.k==='home'?'#5B2A4E':'#8b7d86',weight:d.k==='home'?600:500})),
+      toast:s.toast,
+      jumpLinks:[['Login','login'],['Home','home'],['Shop','shop'],['Product','product'],['Bag','cart'],['Checkout','checkout'],['Orders','orders'],['Wishlist','wishlist'],['Coupons','coupons'],['Profile','profile']].map(([name,k])=>({name,bg:sc===k?'#5B2A4E':'rgba(0,0,0,.06)',fg:sc===k?'#fff':'#2B1F27',tap:()=>{ if(k==='product'&&!s.sku) this.setState({sku:'MG-MAG-200'}); if(k==='login') this.setState({screen:'login',otpStage:false,otp:''}); else this.go(k); }})),
+    };
+  }
+}
+</script>
+</body>
+</html>
