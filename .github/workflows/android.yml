@@ -30,12 +30,12 @@ jobs:
       run:
         working-directory: app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - uses: subosito/flutter-action@v2
         with:
@@ -63,13 +63,34 @@ jobs:
             echo "keyPassword=$KEY_PASSWORD"
           } > android/key.properties
 
+      # Output goes to a file too; on failure the tail is posted as an annotation so the
+      # cause shows on the run page (and via the API) without opening raw logs.
       - name: Build APK (install on phones)
-        run: flutter build apk --release --dart-define=API_BASE_URL=$API_BASE_URL --build-number=${{ github.run_number }}
+        run: |
+          set -o pipefail
+          flutter build apk --release -v --dart-define=API_BASE_URL=$API_BASE_URL --build-number=${{ github.run_number }} 2>&1 | tee ../build.log
 
       - name: Build App Bundle (Play Store upload)
-        run: flutter build appbundle --release --dart-define=API_BASE_URL=$API_BASE_URL --build-number=${{ github.run_number }}
+        run: |
+          set -o pipefail
+          flutter build appbundle --release --dart-define=API_BASE_URL=$API_BASE_URL --build-number=${{ github.run_number }} 2>&1 | tee ../build.log
 
-      - uses: actions/upload-artifact@v4
+      - name: Explain failure
+        if: failure()
+        working-directory: .
+        run: |
+          [ -f build.log ] || exit 0
+          # Prefer Gradle's "What went wrong" section; otherwise the last lines.
+          if grep -q "What went wrong" build.log; then
+            sed -n '/What went wrong/,+25p' build.log > reason.txt
+          else
+            grep -v '^\s*$' build.log | tail -40 > reason.txt
+          fi
+          { echo '### Build failure'; echo '```'; cat reason.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          msg=$(sed -e 's/%/%25/g' reason.txt | head -c 3500 | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Android build failed::$msg"
+
+      - uses: actions/upload-artifact@v5
         with:
           name: gowri-android-${{ github.run_number }}
           path: |
