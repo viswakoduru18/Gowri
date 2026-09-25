@@ -98,7 +98,17 @@ Build-time options (`--dart-define`):
 | `LOW_STOCK_THRESHOLD` | `15` | "Only N left" threshold |
 | `SUPPORT_WHATSAPP` | `91` | WhatsApp number for Help & support, e.g. `919876543210` |
 
-### 5. Store builds
+### 5. Android builds (no local setup needed)
+
+Every push to `main` that touches `app/` runs **GitHub Actions → Android build** (`.github/workflows/android.yml`). It runs the tests and builds the app pointed at `https://gowri-backend.onrender.com`.
+Open the finished run on GitHub → **Artifacts** → `gowri-android-N` to download:
+- `app-release.apk`: install directly on Android phones for testing
+- `app-release.aab`: upload to Google Play Console
+
+To rebuild on demand, or against another backend URL: **Actions → Android build → Run workflow**.
+For Play Store signing, add repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Without them, builds are debug-signed (fine for testing, rejected by Play).
+
+### 6. Local store builds
 
 ```bash
 flutter build appbundle --release --dart-define=API_BASE_URL=https://api.yourdomain.com   # Play Store (.aab)
