@@ -4,7 +4,8 @@ function env(name: string, fallback = ''): string {
 
 export const config = {
   port: Number(env('PORT', '8080')),
-  publicBaseUrl: env('PUBLIC_BASE_URL', 'http://localhost:8080').replace(/\/$/, ''),
+  // Render sets RENDER_EXTERNAL_URL (https://<service>.onrender.com); a custom domain can override it.
+  publicBaseUrl: env('PUBLIC_BASE_URL', env('RENDER_EXTERNAL_URL', 'http://localhost:8080')).replace(/\/$/, ''),
   jwtSecret: env('JWT_SECRET', 'dev-only-secret-change-me'),
   catalogCacheSeconds: Number(env('CATALOG_CACHE_SECONDS', '60')),
   zoho: {

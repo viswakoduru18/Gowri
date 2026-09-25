@@ -74,7 +74,8 @@ npm test                    # 23 tests against simulated Zoho / Zoho Payments / 
 npm run dev                 # http://localhost:8080
 ```
 
-Production: `npm run build && npm start` on any Node host (Render, Railway, AWS, GCP) behind HTTPS. Set `PUBLIC_BASE_URL` to the public URL, and set `NODE_ENV=production` so a missing `JWT_SECRET` blocks startup.
+Production on **Render**: `render.yaml` at the repo root is a ready Blueprint (Render → New → Blueprint → this repo). It builds `backend/`, runs it in Singapore, generates `JWT_SECRET`, and asks once for the Zoho/Payments/Pidge secrets.
+Elsewhere: `npm run build && npm start` on any Node host (Render, Railway, AWS, GCP) behind HTTPS. Set `PUBLIC_BASE_URL` to the public URL, and set `NODE_ENV=production` so a missing `JWT_SECRET` blocks startup.
 
 ### 4. Run the app
 

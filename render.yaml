@@ -1,0 +1,59 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Render → New → Blueprint → pick this repo. Secrets marked `sync: false`
+# are asked for once in the Render dashboard and never stored in git.
+services:
+  - type: web
+    name: gowri-backend
+    runtime: node
+    region: singapore          # closest Render region to India
+    plan: starter              # always on; the free plan sleeps and would miss payment webhooks
+    rootDir: backend
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      # ── Zoho (India data centre) ─────────────────────────────
+      - key: ZOHO_ACCOUNTS_URL
+        value: https://accounts.zoho.in
+      - key: ZOHO_API_URL
+        value: https://www.zohoapis.in
+      - key: ZOHO_ORGANIZATION_ID
+        value: "60046198886"
+      - key: ZOHO_CLIENT_ID
+        sync: false
+      - key: ZOHO_CLIENT_SECRET
+        sync: false
+      - key: ZOHO_REFRESH_TOKEN
+        sync: false
+      # ── Zoho Payments ────────────────────────────────────────
+      - key: ZOHO_PAYMENTS_URL
+        value: https://payments.zoho.in
+      - key: ZOHO_PAYMENTS_ACCOUNT_ID
+        sync: false
+      - key: ZOHO_PAYMENTS_API_KEY
+        sync: false
+      - key: ZOHO_PAYMENTS_WEBHOOK_SECRET
+        sync: false
+      # ── Pidge (leave blank until you have credentials) ───────
+      - key: PIDGE_USERNAME
+        sync: false
+      - key: PIDGE_PASSWORD
+        sync: false
+      - key: PIDGE_WEBHOOK_TOKEN
+        sync: false
+      - key: PIDGE_PICKUP_MOBILE
+        sync: false
+      - key: PIDGE_PICKUP_ADDRESS
+        sync: false
+      - key: PIDGE_PICKUP_PINCODE
+        sync: false
+      # ── OTP SMS: "console" prints codes in Render logs until MSG91 is set up
+      - key: OTP_PROVIDER
+        value: console
