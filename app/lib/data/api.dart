@@ -27,6 +27,9 @@ abstract class GowriApi {
   Future<Customer> verifyOtp(String phone, String code);
   Future<Customer> me();
 
+  /// Saves name and email on the customer's Zoho contact (used for invoices).
+  Future<Customer> updateProfile({required String name, String email = ''});
+
   Future<List<Product>> products();
   Future<List<Coupon>> coupons();
 

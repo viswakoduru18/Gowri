@@ -12,6 +12,29 @@ function cf(item: ZohoItem, apiName: string): unknown {
 
 const truthy = (v: unknown) => v === true || v === 'true' || v === 'Yes' || v === 'yes';
 
+const num = (v: unknown) => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN);
+
+/**
+ * Sellable units. Organisations using warehouses/locations can report 0 in the
+ * item-level summary while the stock sits in a location, so location totals are
+ * used when the summary is empty. Committed-aware figures are preferred.
+ */
+export function stockOf(item: ZohoItem): number {
+  const summary = [item.actual_available_stock, item.available_stock, item.stock_on_hand].map(num).find((n) => Number.isFinite(n) && n > 0);
+  if (summary !== undefined) return Math.floor(summary);
+  const sites = [...(item.locations ?? []), ...(item.warehouses ?? [])];
+  const pick = (s: Record<string, unknown>) =>
+    [
+      'location_actual_available_for_sale_stock', 'location_available_for_sale_stock', 'location_actual_available_stock',
+      'location_available_stock', 'location_stock_on_hand', 'warehouse_actual_available_for_sale_stock',
+      'warehouse_available_for_sale_stock', 'warehouse_actual_available_stock', 'warehouse_available_stock', 'warehouse_stock_on_hand',
+    ]
+      .map((k) => num(s[k]))
+      .find((n) => Number.isFinite(n)) ?? 0;
+  const total = sites.reduce((a, s) => a + Math.max(0, pick(s)), 0);
+  return Math.max(0, Math.floor(total));
+}
+
 /** GST % for an item. Zoho India keeps it in item_tax_preferences rather than tax_percentage. */
 export function gstRate(item: ZohoItem): number {
   if (item.is_taxable === false) return 0;
@@ -27,8 +50,8 @@ export function toProduct(item: ZohoItem, cfg: Config['zoho'], publicBaseUrl: st
   if (cfg.sellableCategories.length && !cfg.sellableCategories.includes(category)) return null;
   const price = Number(item.rate) || 0;
   const mrp = Number(cf(item, cfg.cf.mrp)) || price;
-  const stock = Math.max(0, Math.floor(item.actual_available_stock ?? item.available_stock ?? item.stock_on_hand ?? 0));
-  const primaryWh = item.warehouses?.find((w) => w.is_primary)?.warehouse_name;
+  const stock = stockOf(item);
+  const primaryWh = item.warehouses?.find((w) => w.is_primary)?.warehouse_name ?? (item.locations?.find((l) => l.is_primary)?.location_name as string | undefined);
   const sections = [
     ['What it does', item.description],
     ['How to use', cf(item, cfg.cf.howToUse)],
@@ -104,6 +127,25 @@ export class Catalog {
 
   private async load(): Promise<Map<string, Product>> {
     const items = await this.inventory.listItems();
+    // List responses omit per-location stock; re-read zero-stock items (5 at a time) to check locations.
+    const zero = items.filter((it) => it.sku && stockOf(it) === 0);
+    for (let i = 0; i < zero.length && i < 100; i += 5) {
+      await Promise.all(
+        zero.slice(i, i + 5).map(async (it) => {
+          try {
+            const detail = await this.inventory.getItem(it.item_id);
+            Object.assign(it, { locations: detail.locations, warehouses: detail.warehouses });
+            for (const k of ['actual_available_stock', 'available_stock', 'stock_on_hand'] as const) if (detail[k] !== undefined) it[k] = detail[k];
+            if (i === 0 && it === zero[0]) {
+              const raw = { summary: [detail.actual_available_stock, detail.available_stock, detail.stock_on_hand], locations: detail.locations ?? detail.warehouses ?? null };
+              console.log(`[catalog] stock fields for "${it.name}": ${JSON.stringify(raw).slice(0, 600)}`);
+            }
+          } catch (e) {
+            console.warn(`[catalog] could not re-read stock for ${it.name}: ${(e as Error).message}`);
+          }
+        }),
+      );
+    }
     const bySku = new Map<string, Product>();
     let skipped = 0;
     for (const it of items) {

@@ -37,7 +37,11 @@ export class FakeZoho {
     }),
     item('MG-D3-30', 'MyGlo Vitamin D3 Drops', 399, 450, 6, { category_name: 'Vitamins' }),
   ];
-  contacts: { contact_id: string; contact_name: string; mobile: string; addresses: any[] }[] = [];
+  contacts: { contact_id: string; contact_name: string; mobile: string; addresses: any[]; [k: string]: any }[] = [];
+  /** Per-item stock only visible in item detail (organisations using locations). */
+  locationStock = new Map<string, number>();
+  /** When set, Zoho rejects these SO fields (simulates an unsupported place_of_supply code). */
+  rejectSoFields: string[] = [];
   salesorders: ZohoSalesOrder[] = [];
   payments = new Map<string, { payment_id: string; payments_session_id: string; status: string; amount: string; currency: string }>();
   sessions = new Map<string, { amount: string }>();
@@ -77,7 +81,11 @@ export class FakeZoho {
 
     let m: RegExpMatchArray | null;
     if (p === '/inventory/v1/items') return json({ code: 0, items: this.items, page_context: { has_more_page: false } });
-    if ((m = p.match(/^\/inventory\/v1\/items\/([^/]+)$/))) return json({ code: 0, item: this.items.find((i) => i.item_id === m![1]) });
+    if ((m = p.match(/^\/inventory\/v1\/items\/([^/]+)$/))) {
+      const it = this.items.find((i) => i.item_id === m![1])!;
+      const loc = this.locationStock.get(it.sku!);
+      return json({ code: 0, item: loc === undefined ? it : { ...it, locations: [{ location_name: 'Hyderabad WH', is_primary: true, location_actual_available_for_sale_stock: loc }] } });
+    }
     if ((m = p.match(/^\/inventory\/v1\/items\/([^/]+)\/image$/))) return new Response('img', { headers: { 'content-type': 'image/png' } });
 
     if (p === '/inventory/v1/contacts' && method === 'GET') {
@@ -85,8 +93,27 @@ export class FakeZoho {
       return json({ code: 0, contacts: this.contacts.filter((c) => c.mobile.includes(q)) });
     }
     if (p === '/inventory/v1/contacts' && method === 'POST') {
-      const c = { contact_id: `c${++this.n}`, contact_name: body.contact_name, mobile: body.mobile, created_time: '2026-09-25T10:00:00+0530', addresses: [] };
+      const c = { ...body, contact_id: `c${++this.n}`, contact_name: body.contact_name, mobile: body.mobile, created_time: '2026-09-25T10:00:00+0530', addresses: [] };
       this.contacts.push(c);
+      return json({ code: 0, contact: c });
+    }
+    if (p === '/inventory/v1/contacts/contactpersons' && method === 'POST') {
+      const c = this.contacts.find((x) => x.contact_id === body.contact_id)!;
+      const person = { contact_person_id: `cp${++this.n}`, ...body };
+      c.contact_persons = [...(c.contact_persons ?? []), person];
+      return json({ code: 0, contact_person: person });
+    }
+    if ((m = p.match(/^\/inventory\/v1\/contacts\/contactpersons\/([^/]+)\/primary$/))) {
+      for (const c of this.contacts) for (const cp of c.contact_persons ?? []) cp.is_primary_contact = cp.contact_person_id === m[1];
+      return json({ code: 0 });
+    }
+    if ((m = p.match(/^\/inventory\/v1\/contacts\/contactpersons\/([^/]+)$/)) && method === 'PUT') {
+      for (const c of this.contacts) for (const cp of c.contact_persons ?? []) if (cp.contact_person_id === m[1]) Object.assign(cp, body);
+      return json({ code: 0 });
+    }
+    if ((m = p.match(/^\/inventory\/v1\/contacts\/([^/]+)$/))) {
+      const c = this.contacts.find((x) => x.contact_id === m![1])!;
+      if (method === 'PUT') Object.assign(c, body);
       return json({ code: 0, contact: c });
     }
     if ((m = p.match(/^\/inventory\/v1\/contacts\/([^/]+)\/address$/))) {
@@ -99,6 +126,9 @@ export class FakeZoho {
       return json({ code: 0, addresses: c.addresses });
     }
 
+    if (p === '/inventory/v1/salesorders' && method === 'POST' && this.rejectSoFields.some((f) => f in body)) {
+      return json({ code: 4, message: `Invalid value passed for ${this.rejectSoFields.join(', ')}` }, 400);
+    }
     if (p === '/inventory/v1/salesorders' && method === 'POST') {
       const line_items = body.line_items.map((li: any, i: number) => {
         const it = this.items.find((x) => x.item_id === li.item_id)!;
@@ -113,6 +143,9 @@ export class FakeZoho {
         status: 'draft',
         total: sub - (body.discount ?? 0) + (body.shipping_charge ?? 0) + (body.adjustment ?? 0),
         customer_id: body.customer_id,
+        place_of_supply: body.place_of_supply,
+        gst_treatment: body.gst_treatment,
+        billing_address_id: body.billing_address_id,
         customer_name: this.contacts.find((c) => c.contact_id === body.customer_id)?.contact_name,
         shipping_address: this.contacts.flatMap((c) => c.addresses).find((a) => a.address_id === body.shipping_address_id),
         line_items,

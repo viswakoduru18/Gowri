@@ -285,11 +285,10 @@ class ProductCard extends StatelessWidget {
   final Product product;
   final double? width;
   final double imageHeight;
-  final bool showOff;
   final bool showWish;
   final bool outlinedAdd;
 
-  const ProductCard(this.product, {super.key, this.width, this.imageHeight = 140, this.showOff = false, this.showWish = false, this.outlinedAdd = false});
+  const ProductCard(this.product, {super.key, this.width, this.imageHeight = 140, this.showWish = false, this.outlinedAdd = false});
 
   @override
   Widget build(BuildContext context) {
@@ -331,15 +330,8 @@ class ProductCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(p.size, style: outfit(11.5, color: G.muted)),
             const SizedBox(height: 8),
-            Row(children: [
-              Expanded(
-                child: Text.rich(TextSpan(children: [
-                  TextSpan(text: '₹${p.price} ', style: outfit(15, weight: FontWeight.w700)),
-                  showOff
-                      ? TextSpan(text: '${p.off}% off', style: outfit(11, weight: FontWeight.w600, color: G.green))
-                      : TextSpan(text: '₹${p.mrp}', style: outfit(11.5, color: G.faint, decoration: TextDecoration.lineThrough)),
-                ])),
-              ),
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Expanded(child: PriceBlock(p)),
               outlinedAdd
                   ? Tap(
                       onTap: () => s.addToCart(p.sku),
@@ -527,4 +519,28 @@ class DashedLine extends StatelessWidget {
           children: List.generate((c.maxWidth / 6).floor(), (i) => Container(width: 3, height: 1, margin: const EdgeInsets.only(right: 3), color: G.lineStrong)),
         ),
       );
+}
+
+/// Selling price, MRP struck through, and the saving, e.g. "₹270 ₹395 / 32% off".
+class PriceBlock extends StatelessWidget {
+  final Product product;
+  final double size;
+  const PriceBlock(this.product, {super.key, this.size = 15});
+  @override
+  Widget build(BuildContext context) {
+    final p = product;
+    final discounted = p.mrp > p.price;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Text.rich(
+        TextSpan(children: [
+          TextSpan(text: '₹${p.price}', style: outfit(size, weight: FontWeight.w700)),
+          if (discounted) TextSpan(text: '  ₹${p.mrp}', style: outfit(size * .77, color: G.faint, decoration: TextDecoration.lineThrough)),
+        ]),
+        maxLines: 1,
+        overflow: TextOverflow.fade,
+        softWrap: false,
+      ),
+      if (discounted) Text('${p.off}% off', style: outfit(size * .75, weight: FontWeight.w600, color: G.green)),
+    ]);
+  }
 }

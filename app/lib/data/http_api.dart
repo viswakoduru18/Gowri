@@ -52,6 +52,10 @@ class HttpGowriApi implements GowriApi {
   Future<Customer> me() async => Customer.fromJson((await _call('GET', '/v1/me'))['customer']);
 
   @override
+  Future<Customer> updateProfile({required String name, String email = ''}) async =>
+      Customer.fromJson((await _call('PUT', '/v1/me', {'name': name, 'email': email}))['customer']);
+
+  @override
   Future<List<Product>> products() async => [for (final p in (await _call('GET', '/v1/catalog/products'))['products']) Product.fromJson(p)];
 
   @override

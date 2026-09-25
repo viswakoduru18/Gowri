@@ -107,10 +107,12 @@ class Address {
 class Customer {
   final String id;
   final String name;
+  final String email;
   final String phone;
   final String memberSince;
-  const Customer({required this.id, required this.name, required this.phone, required this.memberSince});
-  factory Customer.fromJson(Map<String, dynamic> j) => Customer(id: j['id'], name: j['name'] ?? '', phone: j['phone'] ?? '', memberSince: '${j['memberSince'] ?? ''}');
+  const Customer({required this.id, required this.name, this.email = '', required this.phone, required this.memberSince});
+  factory Customer.fromJson(Map<String, dynamic> j) =>
+      Customer(id: j['id'], name: j['name'] ?? '', email: j['email'] ?? '', phone: j['phone'] ?? '', memberSince: '${j['memberSince'] ?? ''}');
 
   /// Zoho contacts created by the app are named "Gowri customer 1234" until the customer sets a name.
   bool get hasRealName => name.isNotEmpty && !name.startsWith('Gowri customer');

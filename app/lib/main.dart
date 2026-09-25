@@ -10,6 +10,7 @@ import 'data/http_api.dart';
 import 'data/mock_api.dart';
 import 'screens/cart.dart';
 import 'screens/checkout.dart';
+import 'screens/edit_profile.dart';
 import 'screens/home.dart';
 import 'screens/lists.dart';
 import 'screens/login.dart';
@@ -67,6 +68,7 @@ class AppShell extends StatelessWidget {
         Screen.coupons => const CouponsScreen(),
         Screen.returns => const ReturnsScreen(),
         Screen.profile => const ProfileScreen(),
+        Screen.editProfile => const EditProfileScreen(),
       };
 
   @override

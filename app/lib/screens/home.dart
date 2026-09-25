@@ -68,7 +68,7 @@ class HomeScreen extends StatelessWidget {
               _grid(context, s.products)
             else
               SizedBox(
-                height: 276,
+                height: 292,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -99,7 +99,7 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(height: 2),
                                 Text('${p.size} · ${p.concern}', style: outfit(12, color: G.muted)),
                                 const SizedBox(height: 4),
-                                Price(p.price, size: 14),
+                                PriceBlock(p, size: 14),
                               ]),
                             ),
                             const Padding(padding: EdgeInsets.only(right: 6), child: Icon(Icons.chevron_right_rounded, color: G.faint)),
@@ -120,9 +120,9 @@ class HomeScreen extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, mainAxisExtent: 254),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, mainAxisExtent: 270),
         itemCount: products.length,
-        itemBuilder: (_, i) => ProductCard(products[i], imageHeight: 130, showOff: true, outlinedAdd: true),
+        itemBuilder: (_, i) => ProductCard(products[i], imageHeight: 130, outlinedAdd: true),
       );
 }
 

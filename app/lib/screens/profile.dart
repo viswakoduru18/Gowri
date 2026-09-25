@@ -16,6 +16,7 @@ class ProfileScreen extends StatelessWidget {
     final s = context.watch<AppState>();
     final c = s.customer;
     final rows = <(String, String, VoidCallback)>[
+      ('Your details', c?.hasRealName == true ? 'Name, email' : 'Add your name', s.editProfile),
       ('Coupons & offers', '${s.coupons.length} available', () => s.go(Screen.coupons)),
       ('GST invoices', 'From Zoho Books', () => s.go(Screen.orders)),
       ('Help & support', 'WhatsApp', () => launchUrl(Uri.parse('https://wa.me/${AppConfig.supportWhatsApp}'), mode: LaunchMode.externalApplication)),
@@ -34,11 +35,16 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(c?.hasRealName == true ? c!.name : 'Welcome to Gowri', style: outfit(18, weight: FontWeight.w600)),
-              Text('+91 ${c?.phone ?? s.phone} · Member since ${c?.memberSince ?? ''}', style: outfit(13, color: G.muted)),
-            ]),
+            child: Tap(
+              onTap: s.editProfile,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(c?.hasRealName == true ? c!.name : 'Add your name', style: outfit(18, weight: FontWeight.w600)),
+                Text('+91 ${c?.phone ?? s.phone} · Member since ${c?.memberSince ?? ''}', style: outfit(13, color: G.muted)),
+                if (c?.email.isNotEmpty == true) Text(c!.email, style: outfit(13, color: G.muted)),
+              ]),
+            ),
           ),
+          Tap(onTap: s.editProfile, child: Padding(padding: const EdgeInsets.all(6), child: Text('Edit', style: outfit(13.5, weight: FontWeight.w600, color: G.plum)))),
         ]),
       ),
       Padding(

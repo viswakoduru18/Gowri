@@ -90,12 +90,13 @@ class MockGowriApi implements GowriApi {
   final Duration latency;
   final Duration packAfter;
 
-  MockGowriApi({this.latency = const Duration(milliseconds: 250), this.packAfter = const Duration(seconds: 3)});
+  MockGowriApi({this.latency = const Duration(milliseconds: 250), this.packAfter = const Duration(seconds: 3), String customerName = 'Ananya Rao'})
+      : _customer = Customer(id: 'demo', name: customerName, phone: '', memberSince: '2024');
 
   @override
   bool get isDemo => true;
 
-  Customer _customer = const Customer(id: 'demo', name: 'Ananya Rao', phone: '', memberSince: '2024');
+  Customer _customer;
   final _addresses = <Address>[
     const Address(id: 'a1', label: 'Home', line: 'Plot 42, Road No. 10, Jubilee Hills, Hyderabad 500033', pincode: '500033'),
     const Address(id: 'a2', label: 'Office', line: 'Gowri Life Sciences, HITEC City, Hyderabad 500081', pincode: '500081'),
@@ -142,11 +143,17 @@ class MockGowriApi implements GowriApi {
   @override
   Future<Customer> verifyOtp(String phone, String code) => _later(() {
         token = 'demo';
-        return _customer = Customer(id: 'demo', name: _customer.name, phone: phone, memberSince: '2024');
+        return _customer = Customer(id: 'demo', name: _customer.name, email: _customer.email, phone: phone, memberSince: '2024');
       });
 
   @override
   Future<Customer> me() => _later(() => _customer);
+
+  @override
+  Future<Customer> updateProfile({required String name, String email = ''}) => _later(() {
+        if (name.trim().length < 2) throw const ApiException('Please enter your full name', 400);
+        return _customer = Customer(id: 'demo', name: name.trim(), email: email.trim(), phone: _customer.phone, memberSince: _customer.memberSince);
+      });
 
   @override
   Future<List<Product>> products() => _later(() => demoProducts);

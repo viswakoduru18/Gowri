@@ -33,7 +33,8 @@ export interface ZohoItem {
   image_name?: string;
   image_document_id?: string;
   custom_fields?: ZohoCustomField[];
-  warehouses?: { warehouse_name: string; warehouse_actual_available_stock?: number; is_primary?: boolean }[];
+  warehouses?: ({ warehouse_name: string; is_primary?: boolean } & Record<string, unknown>)[];
+  locations?: ({ location_name?: string; is_primary?: boolean } & Record<string, unknown>)[];
 }
 
 export interface ZohoLineItem {
@@ -80,9 +81,20 @@ export interface ZohoSalesOrder {
   contact_persons_details?: { mobile?: string; phone?: string }[];
 }
 
+export interface ZohoContactPerson {
+  contact_person_id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  mobile?: string;
+  is_primary_contact?: boolean;
+}
+
 export interface ZohoContact {
   contact_id: string;
   contact_name: string;
+  email?: string;
+  contact_persons?: ZohoContactPerson[];
   mobile?: string;
   phone?: string;
   created_time?: string;
@@ -142,11 +154,35 @@ export class InventoryApi {
         contact_name: name || `Gowri customer ${phone.slice(-4)}`,
         contact_type: 'customer',
         customer_sub_type: 'individual',
+        // Zoho India needs a GST treatment before a Sales Order can be invoiced.
+        gst_treatment: 'consumer',
         mobile: phone,
         notes: 'Created by the Gowri mobile app',
       },
     });
     return res.contact;
+  }
+
+  async updateContact(contactId: string, body: Record<string, unknown>): Promise<ZohoContact> {
+    return (await this.zoho.request<{ contact: ZohoContact }>(`/inventory/v1/contacts/${contactId}`, { method: 'PUT', body })).contact;
+  }
+
+  /** Sets the primary contact person's name/email (that email receives invoices). */
+  async upsertPrimaryPerson(contactId: string, p: { first_name: string; last_name: string; email?: string; mobile: string }): Promise<void> {
+    const contact = await this.getContact(contactId);
+    const primary = contact.contact_persons?.find((c) => c.is_primary_contact) ?? contact.contact_persons?.[0];
+    if (primary) {
+      await this.zoho.request(`/inventory/v1/contacts/contactpersons/${primary.contact_person_id}`, {
+        method: 'PUT',
+        body: { contact_id: contactId, ...p },
+      });
+    } else {
+      const res = await this.zoho.request<{ contact_person: ZohoContactPerson }>('/inventory/v1/contacts/contactpersons', {
+        method: 'POST',
+        body: { contact_id: contactId, ...p },
+      });
+      await this.zoho.request(`/inventory/v1/contacts/contactpersons/${res.contact_person.contact_person_id}/primary`, { method: 'POST' }).catch(() => {});
+    }
   }
 
   async getContact(contactId: string): Promise<ZohoContact> {
@@ -178,6 +214,9 @@ export class InventoryApi {
     adjustment?: number;
     adjustment_description?: string;
     shipping_address_id?: string;
+    billing_address_id?: string;
+    place_of_supply?: string;
+    gst_treatment?: string;
     is_inclusive_tax?: boolean;
     notes?: string;
   }): Promise<ZohoSalesOrder> {

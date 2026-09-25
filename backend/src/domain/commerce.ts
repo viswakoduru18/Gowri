@@ -6,6 +6,8 @@ import { fromPidgePayload, PidgeClient, type DeliveryBooking } from '../delivery
 import type { InventoryApi, ZohoAddress, ZohoSalesOrder } from '../zoho/inventory.js';
 import { isPaymentSuccessful, type PaymentsApi } from '../zoho/payments.js';
 import type { Catalog } from './catalog.js';
+import { ZohoError } from '../zoho/client.js';
+import { stateCode } from './india.js';
 import { toOrder } from './orders.js';
 import { PricingError, couponProblem, quote, type CouponRule } from './pricing.js';
 
@@ -58,6 +60,7 @@ export class Commerce {
       id: contact.contact_id,
       contactId: contact.contact_id,
       name: contact.contact_name,
+      email: contact.email ?? '',
       phone,
       memberSince: (contact.created_time ?? today()).slice(0, 4),
     };
@@ -65,9 +68,24 @@ export class Commerce {
     return customer;
   }
 
+  /** Saves the customer's name and email on their Zoho contact. */
+  async updateProfile(customer: Customer, p: { name: string; email?: string }): Promise<Customer> {
+    const name = p.name.trim().replace(/\s+/g, ' ');
+    const [first, ...rest] = name.split(' ');
+    await this.inventory.updateContact(customer.contactId, { contact_name: name, gst_treatment: 'consumer' });
+    try {
+      await this.inventory.upsertPrimaryPerson(customer.contactId, { first_name: first, last_name: rest.join(' '), email: p.email || undefined, mobile: customer.phone });
+    } catch (e) {
+      console.warn(`[profile] contact person update failed for ${customer.contactId}: ${(e as Error).message}`);
+    }
+    const updated = { ...customer, name, email: p.email ?? customer.email };
+    this.store.customersByPhone.set(customer.phone, updated);
+    return updated;
+  }
+
   async addresses(contactId: string): Promise<Address[]> {
     const list = await this.inventory.listContactAddresses(contactId);
-    return list.map((a, i) => ({ id: a.address_id ?? String(i), label: a.attention || (i === 0 ? 'Home' : `Address ${i + 1}`), line: addressLine(a), pincode: a.zip }));
+    return list.map((a, i) => ({ id: a.address_id ?? String(i), label: a.attention || (i === 0 ? 'Home' : `Address ${i + 1}`), line: addressLine(a), pincode: a.zip, state: a.state }));
   }
 
   async addAddress(contactId: string, a: { label: string; line1: string; line2?: string; city: string; state: string; pincode: string }): Promise<Address> {
@@ -80,7 +98,32 @@ export class Commerce {
       zip: a.pincode,
       country: 'India',
     });
-    return { id: saved.address_id ?? '', label: a.label, line: addressLine(saved), pincode: a.pincode };
+    // Invoices need a billing address and place of supply on the contact; set them from the first address.
+    try {
+      const contact = await this.inventory.getContact(contactId);
+      if (!contact.billing_address?.address) {
+        const addr = { attention: a.label, address: a.line1, street2: a.line2, city: a.city, state: a.state, zip: a.pincode, country: 'India' };
+        const code = stateCode(a.state);
+        await this.withoutOptional(
+          (extra) => this.inventory.updateContact(contactId, { billing_address: addr, gst_treatment: 'consumer', ...extra }),
+          code ? { place_of_contact: code } : {},
+        );
+      }
+    } catch (e) {
+      console.warn(`[address] could not set billing address on ${contactId}: ${(e as Error).message}`);
+    }
+    return { id: saved.address_id ?? '', label: a.label, line: addressLine(saved), pincode: a.pincode, state: a.state };
+  }
+
+  /** Runs a Zoho write with optional GST fields; if Zoho rejects them, retries without. */
+  private async withoutOptional<T>(write: (extra: Record<string, unknown>) => Promise<T>, extra: Record<string, unknown>): Promise<T> {
+    try {
+      return await write(extra);
+    } catch (e) {
+      if (!(e instanceof ZohoError) || !Object.keys(extra).length) throw e;
+      console.warn(`[zoho] retrying without ${Object.keys(extra).join(', ')}: ${e.message}`);
+      return write({});
+    }
   }
 
   // ── Pricing ───────────────────────────────────────────────────────
@@ -127,7 +170,10 @@ export class Commerce {
 
     const ref = this.store.nextOrderRef();
     const method = PAYMENT_LABELS[input.payment];
-    const so = await this.inventory.createSalesOrder({
+    const addresses = input.addressId ? await this.addresses(customer.contactId).catch(() => []) : [];
+    const pos = stateCode(addresses.find((a) => a.id === input.addressId)?.state);
+    const so = await this.withoutOptional((extra) => this.inventory.createSalesOrder({
+      ...extra,
       customer_id: customer.contactId,
       reference_number: ref,
       date: today(),
@@ -137,8 +183,9 @@ export class Commerce {
       shipping_charge: totals.shipping,
       ...(totals.codFee ? { adjustment: totals.codFee, adjustment_description: 'COD handling' } : {}),
       shipping_address_id: input.addressId,
+      billing_address_id: input.addressId,
       notes: `Gowri app order ${ref}\nPayment: ${method}${totals.couponCode ? `\nCoupon: ${totals.couponCode}` : ''}`,
-    });
+    }), { gst_treatment: 'consumer', ...(pos ? { place_of_supply: pos } : {}) });
     if (Math.abs(so.total - totals.total) > 1) {
       console.warn(`[order ${ref}] Zoho total ₹${so.total} differs from app quote ₹${totals.total}; check tax/shipping settings in Zoho.`);
     }

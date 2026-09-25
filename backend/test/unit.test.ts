@@ -149,3 +149,22 @@ test('GST comes from Zoho India item_tax_preferences', async () => {
   assert.equal(gstRate({ ...item('A', 'A', 1, 1, 1), tax_percentage: undefined, intra_state_tax_rate: 5 } as never), 5);
   assert.equal(gstRate({ ...item('A', 'A', 1, 1, 1), is_taxable: false }), 0);
 });
+
+test('stock: summary fields first, then location/warehouse totals', async () => {
+  const { stockOf } = await import('../src/domain/catalog.js');
+  const base = item('S', 'S', 1, 1, 0);
+  assert.equal(stockOf({ ...base, actual_available_stock: 7 }), 7);
+  assert.equal(stockOf({ ...base, actual_available_stock: 0, available_stock: 0, stock_on_hand: 12 }), 12);
+  assert.equal(stockOf({ ...base, actual_available_stock: 0, locations: [{ location_actual_available_for_sale_stock: 5 }, { location_actual_available_for_sale_stock: 3 }] }), 8);
+  assert.equal(stockOf({ ...base, actual_available_stock: 0, warehouses: [{ warehouse_name: 'W', warehouse_actual_available_stock: '4' }] }), 4);
+  assert.equal(stockOf({ ...base, actual_available_stock: 0 }), 0);
+});
+
+test('Indian state names map to Zoho place-of-supply codes', async () => {
+  const { stateCode } = await import('../src/domain/india.js');
+  assert.equal(stateCode('Telangana'), 'TS');
+  assert.equal(stateCode(' tamil nadu '), 'TN');
+  assert.equal(stateCode('Jammu & Kashmir'), 'JK');
+  assert.equal(stateCode('KA'), 'KA');
+  assert.equal(stateCode('Atlantis'), undefined);
+});

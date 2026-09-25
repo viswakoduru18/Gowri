@@ -42,6 +42,7 @@ export interface Address {
   label: string;
   line: string;
   pincode?: string;
+  state?: string;
 }
 
 export type PaymentMethod = 'upi' | 'card' | 'wallet' | 'netbanking' | 'cod';
@@ -94,6 +95,7 @@ export interface Customer {
   /** Zoho contact_id */
   contactId: string;
   name: string;
+  email: string;
   phone: string;
   memberSince: string;
 }

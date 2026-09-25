@@ -7,7 +7,7 @@ import '../data/api.dart';
 import '../data/models.dart';
 import '../data/pricing.dart';
 
-enum Screen { login, home, shop, product, cart, checkout, tracking, orders, wishlist, coupons, returns, profile }
+enum Screen { login, home, shop, product, cart, checkout, tracking, orders, wishlist, coupons, returns, profile, editProfile }
 
 const tabScreens = {Screen.home, Screen.shop, Screen.wishlist, Screen.orders, Screen.profile};
 
@@ -43,6 +43,7 @@ class AppState extends ChangeNotifier {
   }
 
   void back() {
+    if (screen == Screen.editProfile && onboardingProfile) return skipProfile();
     screen = _history.isNotEmpty ? _history.removeLast() : Screen.home;
     toast = null;
     _onScreenChanged();
@@ -137,6 +138,11 @@ class AppState extends ChangeNotifier {
       otpStage = false;
       otp = '';
       _resetTo(Screen.home);
+      // First sign-in: ask for the name that goes on orders and GST invoices.
+      if (!customer!.hasRealName) {
+        onboardingProfile = true;
+        go(Screen.editProfile);
+      }
     } on ApiException catch (e) {
       authError = e.message;
       otp = '';
@@ -144,6 +150,61 @@ class AppState extends ChangeNotifier {
       authBusy = false;
       notifyListeners();
     }
+  }
+
+  // ── Profile ─────────────────────────────────────────────────────────
+  bool onboardingProfile = false;
+  bool profileBusy = false;
+  String? profileError;
+
+  void editProfile() {
+    onboardingProfile = false;
+    profileError = null;
+    go(Screen.editProfile);
+  }
+
+  Future<bool> saveProfile(String name, String email) async {
+    if (profileBusy) return false;
+    final n = name.trim();
+    final e = email.trim();
+    if (n.length < 2) {
+      profileError = 'Please enter your full name';
+      notifyListeners();
+      return false;
+    }
+    if (e.isNotEmpty && !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(e)) {
+      profileError = 'Enter a valid email, or leave it empty';
+      notifyListeners();
+      return false;
+    }
+    profileBusy = true;
+    profileError = null;
+    notifyListeners();
+    try {
+      customer = await api.updateProfile(name: n, email: e);
+      final wasOnboarding = onboardingProfile;
+      onboardingProfile = false;
+      if (wasOnboarding) {
+        _resetTo(Screen.home);
+        showToast('Welcome to Gowri, ${customer!.firstName}!', bag: false);
+      } else {
+        back();
+        showToast('Profile updated', bag: false);
+      }
+      return true;
+    } on ApiException catch (err) {
+      profileError = err.message;
+      return false;
+    } finally {
+      profileBusy = false;
+      notifyListeners();
+    }
+  }
+
+  void skipProfile() {
+    onboardingProfile = false;
+    _resetTo(Screen.home);
+    notifyListeners();
   }
 
   Future<void> logout() async {

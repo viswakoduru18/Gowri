@@ -129,6 +129,16 @@ export function createApp(d: Deps) {
     h(async (_req, res) => res.json({ customer: await customerOf(res) })),
   );
 
+  authed.put(
+    '/me',
+    h(async (req, res) => {
+      const body = z
+        .object({ name: z.string().trim().min(2, 'Please enter your full name').max(80), email: z.union([z.literal(''), z.string().trim().email('Enter a valid email')]).optional() })
+        .parse(req.body);
+      res.json({ customer: await d.commerce.updateProfile(await customerOf(res), body) });
+    }),
+  );
+
   authed.get(
     '/me/addresses',
     h(async (_req, res) => res.json({ addresses: await d.commerce.addresses(session(res).contactId) })),

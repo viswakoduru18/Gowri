@@ -112,4 +112,60 @@ void main() {
     // Leave the widget tree so periodic timers stop.
     await t.pumpWidget(const SizedBox());
   });
+
+  testWidgets('first sign-in asks for a name; profile can be edited later', (t) async {
+    t.view.physicalSize = const Size(402 * 3, 874 * 3);
+    t.view.devicePixelRatio = 3;
+    addTearDown(t.view.reset);
+
+    await t.pumpWidget(GowriApp(api: MockGowriApi(latency: Duration.zero, customerName: 'Gowri customer 7911')));
+    await waitFor(t, find.text('Send code'));
+    await t.enterText(find.byType(TextField), '9876547911');
+    await t.pump();
+    await t.tap(find.text('Send code'));
+    await settle(t);
+    for (final d in ['1', '2', '3', '4']) {
+      await t.tap(find.text(d).last);
+      await t.pump();
+    }
+    await waitFor(t, find.text('Welcome to Gowri'));
+
+    // Validation, then save
+    await t.tap(find.text('Continue'));
+    await t.pump();
+    expect(find.text('Please enter your full name'), findsOneWidget);
+    await t.enterText(find.byType(TextField).at(0), 'Viswa Koduru');
+    await t.enterText(find.byType(TextField).at(1), 'viswa@example');
+    await t.pump();
+    await t.tap(find.text('Continue'));
+    await t.pump();
+    expect(find.text('Enter a valid email, or leave it empty'), findsOneWidget);
+    await t.enterText(find.byType(TextField).at(1), 'viswa@example.com');
+    await t.pump();
+    await t.tap(find.text('Continue'));
+    await settle(t);
+    expect(find.text('Welcome to Gowri, Viswa!'), findsOneWidget);
+    expect(find.text('Shop by concern'), findsOneWidget);
+
+    // Card pricing: price, struck MRP and saving
+    expect(find.textContaining('₹440  ₹550', findRichText: true), findsWidgets);
+    expect(find.text('20% off'), findsWidgets);
+
+    // Me tab shows the saved details and opens the editor
+    await t.tap(find.text('Me'));
+    await settle(t);
+    expect(find.text('Viswa Koduru'), findsOneWidget);
+    expect(find.text('viswa@example.com'), findsOneWidget);
+    await t.tap(find.text('Edit'));
+    await settle(t);
+    expect(find.text('Your details'), findsOneWidget);
+    await t.enterText(find.byType(TextField).at(0), 'Viswa K');
+    await t.pump();
+    await t.tap(find.text('Save'));
+    await settle(t);
+    expect(find.text('Viswa K'), findsOneWidget);
+    expect(find.text('Profile updated'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+  });
 }

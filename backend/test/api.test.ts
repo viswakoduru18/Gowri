@@ -13,7 +13,7 @@ import { ZohoAuth, ZohoClient } from '../src/zoho/client.js';
 import { InventoryApi } from '../src/zoho/inventory.js';
 import { PaymentsApi } from '../src/zoho/payments.js';
 import { PidgeClient } from '../src/delivery/pidge.js';
-import { FakeZoho } from './fake-zoho.js';
+import { FakeZoho, item } from './fake-zoho.js';
 
 const zoho = new FakeZoho();
 const sms: SmsSender & { last?: string } = { async send(_p, code) { sms.last = code; } };
@@ -68,6 +68,24 @@ test('OTP login creates a Zoho contact for a new phone', async () => {
   assert.equal((await api('/v1/me')).json.customer.phone, '9876543210');
 });
 
+test('profile: name and email are saved on the Zoho contact', async () => {
+  assert.equal(zoho.contacts[0].contact_name, 'Gowri customer 3210');
+  assert.equal(zoho.contacts[0].gst_treatment, 'consumer', 'new contacts are GST consumers');
+  assert.equal((await api('/v1/me', { method: 'PUT', body: { name: 'A' } })).status, 400);
+  assert.equal((await api('/v1/me', { method: 'PUT', body: { name: 'Ananya Rao', email: 'nope' } })).status, 400);
+  const r = await api('/v1/me', { method: 'PUT', body: { name: '  Ananya   Rao ', email: 'ananya@example.com' } });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.customer.name, 'Ananya Rao');
+  assert.equal(zoho.contacts[0].contact_name, 'Ananya Rao');
+  const person = zoho.contacts[0].contact_persons[0];
+  assert.deepEqual([person.first_name, person.last_name, person.email, person.is_primary_contact], ['Ananya', 'Rao', 'ananya@example.com', true]);
+  assert.equal((await api('/v1/me')).json.customer.name, 'Ananya Rao');
+  // Editing again updates the same person rather than adding another.
+  await api('/v1/me', { method: 'PUT', body: { name: 'Ananya R', email: 'a@example.com' } });
+  assert.equal(zoho.contacts[0].contact_persons.length, 1);
+  assert.equal(zoho.contacts[0].contact_persons[0].email, 'a@example.com');
+});
+
 test('catalog is public, hides Zoho item ids, and flags stock', async () => {
   const r = await api('/v1/catalog/products', { auth: false });
   assert.equal(r.status, 200);
@@ -88,6 +106,9 @@ test('addresses are stored on the Zoho contact', async () => {
   assert.equal(r.status, 200);
   const list = await api('/v1/me/addresses');
   assert.equal(list.json.addresses[0].label, 'Home');
+  const c = zoho.contacts[0];
+  assert.equal(c.billing_address.city, 'Hyderabad', 'first address becomes the billing address');
+  assert.equal(c.place_of_contact, 'TS');
   assert.match(list.json.addresses[0].line, /Jubilee|Road No. 10/);
 });
 
@@ -102,8 +123,11 @@ test('quote applies coupons server-side and explains rejections', async () => {
 test('UPI order: draft SO → Zoho Payments session → verified payment confirms SO', async () => {
   const r = await api('/v1/orders', { body: { items: [{ sku: 'MG-MAG-200', qty: 1 }, { sku: 'GW-ASH-60', qty: 1 }], couponCode: 'SLEEP20', payment: 'upi', addressId: (await api('/v1/me/addresses')).json.addresses[0].id } });
   assert.equal(r.status, 201);
-  const so = zoho.so(r.json.order.salesOrderId);
+  const so = zoho.so(r.json.order.salesOrderId) as any;
   assert.equal(so.status, 'draft');
+  assert.equal(so.place_of_supply, 'TS', 'GST place of supply from the delivery state');
+  assert.equal(so.gst_treatment, 'consumer');
+  assert.ok(so.billing_address_id, 'billing address set so the SO can be invoiced');
   assert.equal(so.total, 799);
   assert.match(r.json.payUrl, /\/pay\/so\d+$/);
 
@@ -167,6 +191,27 @@ test('Pidge webhooks move tracking to out for delivery and delivered, with rider
   o = (await api(`/v1/orders/${soId}`)).json.order;
   assert.equal(o.status, 'Delivered');
   assert.equal(o.steps[4].state, 'current');
+});
+
+test('orders still go through if Zoho rejects the GST fields', async () => {
+  zoho.rejectSoFields = ['place_of_supply'];
+  const addressId = (await api('/v1/me/addresses')).json.addresses[0].id;
+  const r = await api('/v1/orders', { body: { items: [{ sku: 'MG-MAG-200', qty: 1 }], payment: 'cod', addressId } });
+  zoho.rejectSoFields = [];
+  assert.equal(r.status, 201);
+  assert.equal((zoho.so(r.json.order.salesOrderId) as any).place_of_supply, undefined);
+});
+
+test('stock held in a Zoho location counts even when the item summary says 0', async () => {
+  zoho.items.push(item('LOC-1', 'Location Stocked Cream', 300, 400, 0));
+  zoho.locationStock.set('LOC-1', 42);
+  // Any order clears the catalog cache; the next load re-reads zero-stock items' locations.
+  await api('/v1/orders', { body: { items: [{ sku: 'GW-ASH-60', qty: 1 }], payment: 'cod' } });
+  const p = (await api('/v1/catalog/products')).json.products.find((x: any) => x.sku === 'LOC-1');
+  assert.equal(p.stock, 42);
+  assert.equal(p.warehouse, 'Hyderabad WH');
+  const r = await api('/v1/orders', { body: { items: [{ sku: 'LOC-1', qty: 2 }], payment: 'cod' } });
+  assert.equal(r.status, 201, 'checkout re-read sees location stock too');
 });
 
 test('checkout re-reads stock from Zoho and refuses oversell', async () => {
