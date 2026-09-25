@@ -109,7 +109,7 @@ export class InventoryApi {
         '/inventory/v1/items',
         { query: { page, per_page: 200, filter_by: 'Status.Active' } },
       );
-      out.push(...res.items);
+      out.push(...(res.items ?? []));
       if (!res.page_context?.has_more_page) break;
     }
     return out;

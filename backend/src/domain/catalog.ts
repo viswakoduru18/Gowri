@@ -97,10 +97,19 @@ export class Catalog {
   private async load(): Promise<Map<string, Product>> {
     const items = await this.inventory.listItems();
     const bySku = new Map<string, Product>();
+    let skipped = 0;
     for (const it of items) {
-      const p = toProduct(it, this.cfg, this.publicBaseUrl);
-      if (p) bySku.set(p.sku, p);
+      try {
+        const p = toProduct(it, this.cfg, this.publicBaseUrl);
+        if (p) bySku.set(p.sku, p);
+        else skipped++;
+      } catch (e) {
+        // One malformed item must not take the whole catalog down.
+        skipped++;
+        console.warn(`[catalog] skipped item ${it?.item_id} (${it?.name}): ${(e as Error).message}`);
+      }
     }
+    console.log(`[catalog] ${items.length} Zoho items → ${bySku.size} sellable (${skipped} skipped: inactive, no SKU, or not in ZOHO_SELLABLE_CATEGORIES)`);
     this.cache = { at: Date.now(), bySku };
     return bySku;
   }

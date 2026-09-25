@@ -265,10 +265,10 @@ export function createApp(d: Deps) {
     if (err instanceof OtpError) return res.status(429).json({ error: err.message });
     if (err instanceof CommerceError) return res.status(err.status).json({ error: err.message });
     if (err instanceof ZohoError) {
-      console.error('[zoho]', err.status, err.code, err.message);
+      console.error('[zoho]', err.status, err.code ?? '', err.message);
       return res.status(502).json({ error: "We couldn't reach our store system. Please try again in a moment." });
     }
-    console.error(err);
+    console.error('[error]', _req.method, _req.path, err);
     res.status(500).json({ error: 'Something went wrong on our side.' });
   });
 

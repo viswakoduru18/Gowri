@@ -46,8 +46,13 @@ export class ZohoAuth {
       client_secret: this.cfg.clientSecret,
       grant_type: 'refresh_token',
     });
-    const res = await this.fetchFn(`${this.cfg.accountsUrl}/oauth/v2/token?${qs}`, { method: 'POST' });
-    const body = (await res.json()) as { access_token?: string; expires_in?: number; error?: string };
+    let res: Response;
+    try {
+      res = await this.fetchFn(`${this.cfg.accountsUrl}/oauth/v2/token?${qs}`, { method: 'POST' });
+    } catch (e) {
+      throw new ZohoError(`Zoho token endpoint unreachable (${this.cfg.accountsUrl}): ${(e as Error).message}`, 502);
+    }
+    const body = (await res.json().catch(() => ({ error: `non-JSON response, HTTP ${res.status}` }))) as { access_token?: string; expires_in?: number; error?: string };
     if (!res.ok || !body.access_token) {
       throw new ZohoError(`Zoho token refresh failed: ${body.error ?? res.status}`, 502);
     }
@@ -78,20 +83,30 @@ export class ZohoClient {
   ) {}
 
   async request<T = any>(path: string, opts: RequestOptions = {}): Promise<T> {
-    const url = new URL(this.baseUrl + path);
+    let url: URL;
+    try {
+      url = new URL(this.baseUrl + path);
+    } catch {
+      throw new ZohoError(`Invalid Zoho base URL "${this.baseUrl}"; check ZOHO_API_URL / ZOHO_PAYMENTS_URL`, 502);
+    }
     for (const [k, v] of Object.entries({ ...this.orgParam, ...opts.query })) {
       if (v !== undefined && v !== '') url.searchParams.set(k, String(v));
     }
     for (let attempt = 0; ; attempt++) {
       const token = await this.auth.accessToken();
-      const res = await this.fetchFn(url, {
-        method: opts.method ?? 'GET',
-        headers: {
-          Authorization: `Zoho-oauthtoken ${token}`,
-          ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        },
-        body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-      });
+      let res: Response;
+      try {
+        res = await this.fetchFn(url, {
+          method: opts.method ?? 'GET',
+          headers: {
+            Authorization: `Zoho-oauthtoken ${token}`,
+            ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          },
+          body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+        });
+      } catch (e) {
+        throw new ZohoError(`Zoho ${path} unreachable: ${(e as Error).message}`, 502);
+      }
       if (res.status === 401 && attempt === 0) {
         this.auth.invalidate();
         continue;
@@ -107,7 +122,7 @@ export class ZohoClient {
       const body = (await res.json().catch(() => ({}))) as { code?: number; message?: string };
       // Zoho returns HTTP 200 with a non-zero `code` for some business errors.
       if (!res.ok || (typeof body.code === 'number' && body.code !== 0)) {
-        throw new ZohoError(body.message ?? `Zoho ${path} failed`, res.ok ? 422 : res.status, body.code);
+        throw new ZohoError(`Zoho ${path}: ${body.message ?? `HTTP ${res.status}`}`, res.ok ? 422 : res.status, body.code);
       }
       return body as T;
     }
