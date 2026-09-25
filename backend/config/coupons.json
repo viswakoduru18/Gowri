@@ -1,0 +1,5 @@
+[
+  { "code": "SLEEP20", "value": "20% OFF", "desc": "20% off Sleep & Stress products. Min. order ₹499.", "pct": 20, "concern": "Sleep & Stress", "minOrder": 499 },
+  { "code": "GLOW10", "value": "10% OFF", "desc": "10% off your whole bag. Valid on first order.", "pct": 10, "firstOrderOnly": true },
+  { "code": "FREESHIP", "value": "FREE", "desc": "Free delivery on any order.", "ship": true }
+]
