@@ -271,3 +271,17 @@ test('another customer cannot read my order', async () => {
 test('Zoho OAuth token is minted once and reused', () => {
   assert.equal(zoho.tokenRefreshes, 1);
 });
+
+test('saving the profile backfills a missing billing address from saved addresses', async () => {
+  await api('/v1/auth/otp/send', { body: { phone: '9000079110' } });
+  const v = await api('/v1/auth/otp/verify', { body: { phone: '9000079110', code: sms.last } });
+  const contact = zoho.contacts.find((c) => c.mobile === '9000079110')!;
+  // An address saved before billing sync existed: no billing address on the contact.
+  contact.addresses.push({ address_id: 'old1', attention: 'Home', address: '5-1 Ameerpet', city: 'Hyderabad', state: 'Telangana', zip: '500016' });
+  const r = await fetch(`${base}/v1/me`, { method: 'PUT', headers: { 'content-type': 'application/json', authorization: `Bearer ${v.json.token}` }, body: JSON.stringify({ name: 'Viswa Koduru' }) });
+  assert.equal(r.status, 200);
+  assert.equal(contact.contact_name, 'Viswa Koduru');
+  assert.equal(contact.billing_address.address, '5-1 Ameerpet');
+  assert.equal(contact.billing_address.address_id, undefined);
+  assert.equal(contact.place_of_contact, 'TS');
+});

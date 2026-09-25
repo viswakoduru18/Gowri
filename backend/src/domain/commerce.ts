@@ -78,6 +78,7 @@ export class Commerce {
     } catch (e) {
       console.warn(`[profile] contact person update failed for ${customer.contactId}: ${(e as Error).message}`);
     }
+    await this.ensureBilling(customer.contactId);
     const updated = { ...customer, name, email: p.email ?? customer.email };
     this.store.customersByPhone.set(customer.phone, updated);
     return updated;
@@ -98,21 +99,30 @@ export class Commerce {
       zip: a.pincode,
       country: 'India',
     });
-    // Invoices need a billing address and place of supply on the contact; set them from the first address.
+    await this.ensureBilling(contactId, { attention: a.label, address: a.line1, street2: a.line2, city: a.city, state: a.state, zip: a.pincode, country: 'India' });
+    return { id: saved.address_id ?? '', label: a.label, line: addressLine(saved), pincode: a.pincode, state: a.state };
+  }
+
+  /**
+   * Invoices need a billing address, GST treatment and place of supply on the
+   * contact. Fills them from `addr` (or the first saved address) when missing.
+   * Never throws.
+   */
+  private async ensureBilling(contactId: string, addr?: ZohoAddress): Promise<void> {
     try {
       const contact = await this.inventory.getContact(contactId);
-      if (!contact.billing_address?.address) {
-        const addr = { attention: a.label, address: a.line1, street2: a.line2, city: a.city, state: a.state, zip: a.pincode, country: 'India' };
-        const code = stateCode(a.state);
-        await this.withoutOptional(
-          (extra) => this.inventory.updateContact(contactId, { billing_address: addr, gst_treatment: 'consumer', ...extra }),
-          code ? { place_of_contact: code } : {},
-        );
-      }
+      if (contact.billing_address?.address) return;
+      const src = addr ?? (await this.inventory.listContactAddresses(contactId))[0];
+      if (!src?.address) return;
+      const { address_id: _id, ...billing } = src;
+      const code = stateCode(billing.state);
+      await this.withoutOptional(
+        (extra) => this.inventory.updateContact(contactId, { billing_address: billing, gst_treatment: 'consumer', ...extra }),
+        code ? { place_of_contact: code } : {},
+      );
     } catch (e) {
-      console.warn(`[address] could not set billing address on ${contactId}: ${(e as Error).message}`);
+      console.warn(`[billing] could not set billing address on ${contactId}: ${(e as Error).message}`);
     }
-    return { id: saved.address_id ?? '', label: a.label, line: addressLine(saved), pincode: a.pincode, state: a.state };
   }
 
   /** Runs a Zoho write with optional GST fields; if Zoho rejects them, retries without. */
