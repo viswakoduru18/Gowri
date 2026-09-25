@@ -1,4 +1,4 @@
-package `in`.mysaalife.gowri
+package com.mysaalife.gowri
 
 import io.flutter.embedding.android.FlutterActivity
 

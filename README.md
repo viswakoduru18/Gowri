@@ -115,7 +115,7 @@ flutter build appbundle --release --dart-define=API_BASE_URL=https://api.yourdom
 flutter build ipa       --release --dart-define=API_BASE_URL=https://api.yourdomain.com   # App Store (needs a Mac + Xcode)
 ```
 
-Bundle ID / application ID: `in.mysaalife.gowri`.
+Bundle ID / application ID: `com.mysaalife.gowri`.
 
 ---
 
