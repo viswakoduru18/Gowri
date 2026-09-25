@@ -21,6 +21,10 @@ export interface ZohoItem {
   unit?: string;
   tax_percentage?: number;
   is_taxable?: boolean;
+  /** India GST: separate intra-state (CGST+SGST) and inter-state (IGST) rates. */
+  item_tax_preferences?: { tax_specification?: string; tax_percentage?: number }[];
+  intra_state_tax_rate?: number;
+  inter_state_tax_rate?: number;
   stock_on_hand?: number;
   available_stock?: number;
   actual_available_stock?: number;

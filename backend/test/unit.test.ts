@@ -142,3 +142,10 @@ test('Zoho token refresh sends a form body and reports HTML replies clearly', as
   const bad = new ZohoAuth(cfg, (async () => new Response(JSON.stringify({ error: 'invalid_client' }))) as unknown as typeof fetch);
   await assert.rejects(bad.accessToken(), /invalid_client \(check ZOHO_CLIENT_ID/);
 });
+
+test('GST comes from Zoho India item_tax_preferences', async () => {
+  const { gstRate } = await import('../src/domain/catalog.js');
+  assert.equal(gstRate({ ...item('A', 'A', 1, 1, 1), tax_percentage: undefined, item_tax_preferences: [{ tax_specification: 'inter', tax_percentage: 12 }, { tax_specification: 'intra', tax_percentage: 12 }] }), 12);
+  assert.equal(gstRate({ ...item('A', 'A', 1, 1, 1), tax_percentage: undefined, intra_state_tax_rate: 5 } as never), 5);
+  assert.equal(gstRate({ ...item('A', 'A', 1, 1, 1), is_taxable: false }), 0);
+});

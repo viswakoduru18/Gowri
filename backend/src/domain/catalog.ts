@@ -12,6 +12,14 @@ function cf(item: ZohoItem, apiName: string): unknown {
 
 const truthy = (v: unknown) => v === true || v === 'true' || v === 'Yes' || v === 'yes';
 
+/** GST % for an item. Zoho India keeps it in item_tax_preferences rather than tax_percentage. */
+export function gstRate(item: ZohoItem): number {
+  if (item.is_taxable === false) return 0;
+  const prefs = item.item_tax_preferences ?? [];
+  const pref = prefs.find((p) => p.tax_specification === 'intra') ?? prefs.find((p) => p.tax_specification === 'inter') ?? prefs[0];
+  return Number(pref?.tax_percentage ?? item.intra_state_tax_rate ?? item.inter_state_tax_rate ?? item.tax_percentage ?? 0) || 0;
+}
+
 /** Maps a Zoho Inventory item to the app's Product. Returns null for items the app should not sell. */
 export function toProduct(item: ZohoItem, cfg: Config['zoho'], publicBaseUrl: string): Product | null {
   if (!item.sku || (item.status && item.status !== 'active')) return null;
@@ -36,7 +44,7 @@ export function toProduct(item: ZohoItem, cfg: Config['zoho'], publicBaseUrl: st
     size: String(cf(item, cfg.cf.packSize) ?? item.unit ?? ''),
     mrp: Math.max(mrp, price),
     price,
-    gst: item.is_taxable === false ? 0 : Number(item.tax_percentage ?? 0),
+    gst: gstRate(item),
     stock,
     category,
     concern: String(cf(item, cfg.cf.concern) ?? ''),
@@ -101,7 +109,10 @@ export class Catalog {
     for (const it of items) {
       try {
         const p = toProduct(it, this.cfg, this.publicBaseUrl);
-        if (p) bySku.set(p.sku, p);
+        if (p && bySku.has(p.sku)) {
+          console.warn(`[catalog] duplicate SKU "${p.sku}": "${bySku.get(p.sku)!.name}" and "${p.name}". Give each item a unique SKU in Zoho; keeping the first.`);
+          skipped++;
+        } else if (p) bySku.set(p.sku, p);
         else skipped++;
       } catch (e) {
         // One malformed item must not take the whole catalog down.

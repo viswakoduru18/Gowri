@@ -193,8 +193,17 @@ class AppState extends ChangeNotifier {
     return [for (final n in names.take(4)) (name: n, count: products.where((p) => p.concern == n).length)];
   }
 
-  List<Product> get bestSellers => products.where((p) => p.best).toList();
-  List<Product> get recommended => products.where((p) => p.rec).toList();
+  // Until items are flagged in Zoho (cf_best_seller / cf_recommended), show in-stock items first.
+  List<Product> get _inStockFirst => [...products.where((p) => p.stock > 0), ...products.where((p) => p.stock == 0)];
+  List<Product> get bestSellers {
+    final flagged = products.where((p) => p.best).toList();
+    return flagged.isNotEmpty ? flagged : _inStockFirst.take(6).toList();
+  }
+
+  List<Product> get recommended {
+    final flagged = products.where((p) => p.rec).toList();
+    return flagged.isNotEmpty ? flagged : _inStockFirst.where((p) => p.stock > 0 && !bestSellers.contains(p)).take(3).toList();
+  }
 
   ({String label, StockLevel level}) stockOf(Product p) {
     if (p.stock == 0) return (label: 'Out of stock', level: StockLevel.out);
