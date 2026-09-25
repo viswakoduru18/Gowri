@@ -40,21 +40,42 @@ export class ZohoAuth {
   }
 
   private async refresh(): Promise<string> {
-    const qs = new URLSearchParams({
+    const form = new URLSearchParams({
       refresh_token: this.cfg.refreshToken,
       client_id: this.cfg.clientId,
       client_secret: this.cfg.clientSecret,
       grant_type: 'refresh_token',
     });
+    const endpoint = `${this.cfg.accountsUrl.replace(/\/$/, '')}/oauth/v2/token`;
     let res: Response;
     try {
-      res = await this.fetchFn(`${this.cfg.accountsUrl}/oauth/v2/token?${qs}`, { method: 'POST' });
+      res = await this.fetchFn(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json', 'User-Agent': 'gowri-backend/1.0' },
+        body: form.toString(),
+      });
     } catch (e) {
-      throw new ZohoError(`Zoho token endpoint unreachable (${this.cfg.accountsUrl}): ${(e as Error).message}`, 502);
+      throw new ZohoError(`Zoho token endpoint unreachable (${endpoint}): ${(e as Error).message}`, 502);
     }
-    const body = (await res.json().catch(() => ({ error: `non-JSON response, HTTP ${res.status}` }))) as { access_token?: string; expires_in?: number; error?: string };
+    const text = await res.text();
+    let body: { access_token?: string; expires_in?: number; error?: string } = {};
+    try {
+      body = JSON.parse(text);
+    } catch {
+      const title = text.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim();
+      throw new ZohoError(
+        `Zoho token endpoint ${endpoint} returned HTML (HTTP ${res.status}${title ? `, page "${title}"` : ''}): ${text.replace(/\s+/g, ' ').slice(0, 200)}`,
+        502,
+      );
+    }
     if (!res.ok || !body.access_token) {
-      throw new ZohoError(`Zoho token refresh failed: ${body.error ?? res.status}`, 502);
+      const hint =
+        body.error === 'invalid_client'
+          ? ' (check ZOHO_CLIENT_ID / ZOHO_CLIENT_SECRET and that ZOHO_ACCOUNTS_URL matches your data centre, e.g. accounts.zoho.in)'
+          : body.error === 'invalid_code'
+            ? ' (ZOHO_REFRESH_TOKEN is wrong or was revoked; generate a new one)'
+            : '';
+      throw new ZohoError(`Zoho token refresh failed: ${body.error ?? `HTTP ${res.status}`}${hint}`, 502);
     }
     this.token = body.access_token;
     this.expiresAt = Date.now() + (body.expires_in ?? 3600) * 1000;

@@ -51,7 +51,8 @@ export class FakeZoho {
   fetch = async (input: string | URL | Request, init: RequestInit = {}): Promise<Response> => {
     const url = new URL(String(input));
     const method = init.method ?? 'GET';
-    const body = init.body ? JSON.parse(String(init.body)) : undefined;
+    const raw = init.body ? String(init.body) : undefined;
+    const body = raw && raw.trim().startsWith('{') ? JSON.parse(raw) : raw;
     this.calls.push(`${method} ${url.pathname}`);
     const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json' } });
     const p = url.pathname;

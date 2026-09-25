@@ -1,5 +1,7 @@
 function env(name: string, fallback = ''): string {
-  return process.env[name] ?? fallback;
+  // Values pasted into hosting dashboards often carry stray spaces, quotes or newlines.
+  const v = process.env[name]?.trim().replace(/^["']|["']$/g, '').trim();
+  return v ? v : fallback;
 }
 
 export const config = {

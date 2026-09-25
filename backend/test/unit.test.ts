@@ -126,3 +126,19 @@ test('Pidge status strings normalise to tracking stages', async () => {
   assert.equal(stageForDelivery('out_for_delivery'), 3);
   assert.equal(stageForDelivery('booked'), null);
 });
+
+test('Zoho token refresh sends a form body and reports HTML replies clearly', async () => {
+  const { ZohoAuth } = await import('../src/zoho/client.js');
+  const cfg = { ...config.zoho, clientId: 'id', clientSecret: 'sec', refreshToken: 'rt' };
+  let seen: RequestInit | undefined;
+  const ok = new ZohoAuth(cfg, (async (_u: string, init: RequestInit) => {
+    seen = init;
+    return new Response(JSON.stringify({ access_token: 'a', expires_in: 3600 }));
+  }) as unknown as typeof fetch);
+  assert.equal(await ok.accessToken(), 'a');
+  assert.equal(String(seen?.body), 'refresh_token=rt&client_id=id&client_secret=sec&grant_type=refresh_token');
+  const html = new ZohoAuth(cfg, (async () => new Response('<html><head><title>Zoho Accounts</title></head></html>', { status: 400 })) as unknown as typeof fetch);
+  await assert.rejects(html.accessToken(), /returned HTML \(HTTP 400, page "Zoho Accounts"\)/);
+  const bad = new ZohoAuth(cfg, (async () => new Response(JSON.stringify({ error: 'invalid_client' }))) as unknown as typeof fetch);
+  await assert.rejects(bad.accessToken(), /invalid_client \(check ZOHO_CLIENT_ID/);
+});
