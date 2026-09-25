@@ -110,8 +110,10 @@ export class Catalog {
       try {
         const p = toProduct(it, this.cfg, this.publicBaseUrl);
         if (p && bySku.has(p.sku)) {
-          console.warn(`[catalog] duplicate SKU "${p.sku}": "${bySku.get(p.sku)!.name}" and "${p.name}". Give each item a unique SKU in Zoho; keeping the first.`);
-          skipped++;
+          // Same SKU on two Zoho items: keep both, disambiguated by Zoho item id.
+          const key = `${p.sku} #${p.itemId.slice(-4)}`;
+          console.warn(`[catalog] duplicate SKU "${p.sku}" on "${p.name}"; listed as "${key}"`);
+          bySku.set(key, { ...p, sku: key, imageUrl: p.imageUrl && `${this.publicBaseUrl}/v1/catalog/products/${encodeURIComponent(key)}/image` });
         } else if (p) bySku.set(p.sku, p);
         else skipped++;
       } catch (e) {
